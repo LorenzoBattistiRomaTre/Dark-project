@@ -1,0 +1,986 @@
+{
+  "is_planar": false,
+  "num_connected_components": 2,
+  "component_sizes": [
+    9,
+    533
+  ],
+  "sources": [
+    1,
+    36,
+    39,
+    107,
+    323,
+    388,
+    392,
+    397,
+    400,
+    404,
+    410,
+    423,
+    439,
+    470,
+    351,
+    162,
+    169,
+    171,
+    188,
+    395,
+    498,
+    543,
+    417,
+    230,
+    236,
+    235
+  ],
+  "sinks": [
+    9,
+    12,
+    14,
+    27,
+    87,
+    75,
+    76,
+    77,
+    300,
+    106,
+    313,
+    317,
+    321,
+    329,
+    389,
+    394,
+    222,
+    425,
+    428,
+    441,
+    486,
+    480,
+    485,
+    490,
+    359,
+    129,
+    131,
+    168,
+    196,
+    507,
+    529,
+    533,
+    537
+  ],
+  "top_in_degree_nodes": [
+    345
+  ],
+  "max_in_degree": 4,
+  "top_out_degree_nodes": [
+    113
+  ],
+  "max_out_degree": 5,
+  "edge_type_distribution": {
+    "Normal": 512,
+    "Succesfull Time Travel": 62,
+    "dashed arrow": 24,
+    "World Swap": 14,
+    "Failed Time Travel": 5,
+    "Same Event": 4,
+    "Quantum Entanglement (Causality Break)": 3
+  },
+  "character_analysis": {
+    "total_characters": 61,
+    "multi_event_characters": {
+      "Jonas Kahnwald / Adam (J)": 184,
+      "Martha Nielsen / Eve (M)": 90,
+      "Claudia Tiedemann (J)": 74,
+      "Noah / Hanno Tauber (J)": 48,
+      "Ulrich Nielsen (J)": 38,
+      "Elisabeth Doppler (J)": 33,
+      "Helge Doppler (J)": 28,
+      "Hannah Kahnwald (J)": 28,
+      "Charlotte Doppler (J)": 28,
+      "Bartosz Tiedemann (J)": 27,
+      "Egon Tiedemann (J)": 25,
+      "H.G. Tannhaus": 22,
+      "Katharina Nielsen (J)": 20,
+      "Martha Nielsen (J)": 18,
+      "Mikkel Nielsen / Michael Kahnwald (J)": 17,
+      "Unknown": 15,
+      "Magnus Nielsen (J)": 15,
+      "Tronte Nielsen (J)": 14,
+      "Regina Tiedemann (J)": 13,
+      "Agnes Nielsen (J)": 12,
+      "Silja Tiedemann (J)": 12,
+      "Franziska Doppler (J)": 12,
+      "Peter Doppler (J)": 12,
+      "Bartosz Tiedemann (M)": 11,
+      "Aleksander Tiedemann / Boris Niewald (J)": 11,
+      "Claudia Tiedemann (M)": 10,
+      "Marek Tannhaus": 9,
+      "Ulrich Nielsen (M)": 9,
+      "Charlotte Doppler (M)": 9,
+      "Aleksander Tiedemann / Boris Niewald (M)": 8,
+      "Helge Doppler (M)": 7,
+      "Sonja Tannhaus": 7,
+      "W. Clausen (J)": 7,
+      "Charlotte Tannhaus": 7,
+      "Doris Tiedemann (J)": 6,
+      "Helene Albers (J)": 6,
+      "Ines Kahnwald (J)": 6,
+      "Mads Nielsen (J)": 6,
+      "Gustav Tannhaus (J)": 5,
+      "Jana Nielsen (J)": 4,
+      "Kilian Obendorf (M)": 4,
+      "Bernd Doppler (J)": 4,
+      "Erik Obendorf (J)": 4,
+      "Yasin Friese (J)": 4,
+      "Noah / Hanno Tauber (M)": 4,
+      "Mads Nielsen (M)": 3,
+      "gretchen": 3,
+      "Greta Doppler (J)": 3,
+      "Magnus Nielsen (M)": 3,
+      "Franziska Doppler (M)": 3,
+      "Torben Wöller (J)": 3,
+      "Hannah Nielsen (M)": 2,
+      "Katharina Nielsen (M)": 2,
+      "Egon Tiedemann (M)": 2
+    },
+    "complete_paths_characters": [
+      "Aleksander Tiedemann / Boris Niewald (M)",
+      "W. Clausen (J)",
+      "Doris Tiedemann (J)",
+      "Gustav Tannhaus (J)",
+      "Erik Obendorf (J)",
+      "Yasin Friese (J)",
+      "Mads Nielsen (M)",
+      "gretchen",
+      "Magnus Nielsen (M)",
+      "Franziska Doppler (M)",
+      "Egon Tiedemann (M)",
+      "Elisabeth Doppler (M)",
+      "Erik Obendorf (M)",
+      "Erna Jung",
+      "Jürgen Obendorf",
+      "Regina Tiedemann / Doppler (M)",
+      "Mikkel Nielsen / Michael Kahnwald (M)",
+      "Daniel Kahnwald"
+    ],
+    "complete_paths_details": [
+      [
+        "Aleksander Tiedemann / Boris Niewald (M)",
+        8
+      ],
+      [
+        "W. Clausen (J)",
+        7
+      ],
+      [
+        "Doris Tiedemann (J)",
+        6
+      ],
+      [
+        "Gustav Tannhaus (J)",
+        5
+      ],
+      [
+        "Erik Obendorf (J)",
+        4
+      ],
+      [
+        "Yasin Friese (J)",
+        4
+      ],
+      [
+        "Mads Nielsen (M)",
+        3
+      ],
+      [
+        "gretchen",
+        3
+      ],
+      [
+        "Magnus Nielsen (M)",
+        3
+      ],
+      [
+        "Franziska Doppler (M)",
+        3
+      ],
+      [
+        "Egon Tiedemann (M)",
+        2
+      ],
+      [
+        "Elisabeth Doppler (M)",
+        1
+      ],
+      [
+        "Erik Obendorf (M)",
+        1
+      ],
+      [
+        "Erna Jung",
+        1
+      ],
+      [
+        "Jürgen Obendorf",
+        1
+      ],
+      [
+        "Regina Tiedemann / Doppler (M)",
+        1
+      ],
+      [
+        "Mikkel Nielsen / Michael Kahnwald (M)",
+        1
+      ],
+      [
+        "Daniel Kahnwald",
+        1
+      ]
+    ],
+    "all_characters_stats": [
+      [
+        "Jonas Kahnwald / Adam (J)",
+        184,
+        27,
+        [
+          31,
+          1,
+          19,
+          2,
+          5,
+          1,
+          1,
+          1,
+          5,
+          1,
+          1,
+          60,
+          4,
+          3,
+          8,
+          3,
+          4,
+          1,
+          11,
+          1,
+          4,
+          2,
+          9,
+          2,
+          1,
+          1,
+          2
+        ]
+      ],
+      [
+        "Martha Nielsen / Eve (M)",
+        90,
+        11,
+        [
+          9,
+          1,
+          3,
+          37,
+          27,
+          1,
+          3,
+          1,
+          5,
+          1,
+          2
+        ]
+      ],
+      [
+        "Claudia Tiedemann (J)",
+        74,
+        9,
+        [
+          52,
+          5,
+          10,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1
+        ]
+      ],
+      [
+        "Noah / Hanno Tauber (J)",
+        48,
+        11,
+        [
+          11,
+          20,
+          1,
+          1,
+          4,
+          1,
+          1,
+          2,
+          1,
+          1,
+          5
+        ]
+      ],
+      [
+        "Ulrich Nielsen (J)",
+        38,
+        9,
+        [
+          1,
+          17,
+          1,
+          2,
+          5,
+          8,
+          2,
+          1,
+          1
+        ]
+      ],
+      [
+        "Elisabeth Doppler (J)",
+        33,
+        8,
+        [
+          6,
+          5,
+          11,
+          1,
+          3,
+          1,
+          1,
+          5
+        ]
+      ],
+      [
+        "Helge Doppler (J)",
+        28,
+        10,
+        [
+          9,
+          1,
+          1,
+          1,
+          1,
+          3,
+          8,
+          1,
+          1,
+          2
+        ]
+      ],
+      [
+        "Hannah Kahnwald (J)",
+        28,
+        7,
+        [
+          16,
+          1,
+          1,
+          1,
+          2,
+          1,
+          6
+        ]
+      ],
+      [
+        "Charlotte Doppler (J)",
+        28,
+        7,
+        [
+          12,
+          3,
+          5,
+          1,
+          4,
+          1,
+          2
+        ]
+      ],
+      [
+        "Bartosz Tiedemann (J)",
+        27,
+        10,
+        [
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          4,
+          2,
+          2,
+          11
+        ]
+      ],
+      [
+        "Egon Tiedemann (J)",
+        25,
+        14,
+        [
+          3,
+          6,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          3,
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      [
+        "H.G. Tannhaus",
+        22,
+        10,
+        [
+          1,
+          6,
+          1,
+          5,
+          1,
+          1,
+          1,
+          4,
+          1,
+          1
+        ]
+      ],
+      [
+        "Katharina Nielsen (J)",
+        20,
+        3,
+        [
+          16,
+          1,
+          3
+        ]
+      ],
+      [
+        "Martha Nielsen (J)",
+        18,
+        4,
+        [
+          14,
+          1,
+          1,
+          2
+        ]
+      ],
+      [
+        "Mikkel Nielsen / Michael Kahnwald (J)",
+        17,
+        5,
+        [
+          11,
+          3,
+          1,
+          1,
+          1
+        ]
+      ],
+      [
+        "Unknown",
+        15,
+        3,
+        [
+          4,
+          10,
+          1
+        ]
+      ],
+      [
+        "Magnus Nielsen (J)",
+        15,
+        8,
+        [
+          1,
+          2,
+          6,
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      [
+        "Tronte Nielsen (J)",
+        14,
+        5,
+        [
+          2,
+          2,
+          2,
+          4,
+          3
+        ]
+      ],
+      [
+        "Regina Tiedemann (J)",
+        13,
+        7,
+        [
+          3,
+          2,
+          1,
+          1,
+          2,
+          1,
+          3
+        ]
+      ],
+      [
+        "Agnes Nielsen (J)",
+        12,
+        5,
+        [
+          4,
+          2,
+          1,
+          4,
+          1
+        ]
+      ],
+      [
+        "Silja Tiedemann (J)",
+        12,
+        5,
+        [
+          3,
+          1,
+          6,
+          1,
+          1
+        ]
+      ],
+      [
+        "Franziska Doppler (J)",
+        12,
+        6,
+        [
+          2,
+          2,
+          1,
+          5,
+          1,
+          1
+        ]
+      ],
+      [
+        "Peter Doppler (J)",
+        12,
+        4,
+        [
+          7,
+          1,
+          1,
+          2
+        ]
+      ],
+      [
+        "Bartosz Tiedemann (M)",
+        11,
+        5,
+        [
+          3,
+          3,
+          1,
+          2,
+          2
+        ]
+      ],
+      [
+        "Aleksander Tiedemann / Boris Niewald (J)",
+        11,
+        5,
+        [
+          4,
+          2,
+          3,
+          1,
+          1
+        ]
+      ],
+      [
+        "Claudia Tiedemann (M)",
+        10,
+        2,
+        [
+          6,
+          4
+        ]
+      ],
+      [
+        "Marek Tannhaus",
+        9,
+        3,
+        [
+          3,
+          3,
+          3
+        ]
+      ],
+      [
+        "Ulrich Nielsen (M)",
+        9,
+        3,
+        [
+          7,
+          1,
+          1
+        ]
+      ],
+      [
+        "Charlotte Doppler (M)",
+        9,
+        2,
+        [
+          7,
+          2
+        ]
+      ],
+      [
+        "Aleksander Tiedemann / Boris Niewald (M)",
+        8,
+        1,
+        [
+          8
+        ]
+      ],
+      [
+        "Helge Doppler (M)",
+        7,
+        2,
+        [
+          2,
+          5
+        ]
+      ],
+      [
+        "Sonja Tannhaus",
+        7,
+        3,
+        [
+          2,
+          2,
+          3
+        ]
+      ],
+      [
+        "W. Clausen (J)",
+        7,
+        1,
+        [
+          7
+        ]
+      ],
+      [
+        "Charlotte Tannhaus",
+        7,
+        3,
+        [
+          2,
+          2,
+          3
+        ]
+      ],
+      [
+        "Doris Tiedemann (J)",
+        6,
+        1,
+        [
+          6
+        ]
+      ],
+      [
+        "Helene Albers (J)",
+        6,
+        2,
+        [
+          2,
+          4
+        ]
+      ],
+      [
+        "Ines Kahnwald (J)",
+        6,
+        5,
+        [
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      [
+        "Mads Nielsen (J)",
+        6,
+        2,
+        [
+          4,
+          2
+        ]
+      ],
+      [
+        "Gustav Tannhaus (J)",
+        5,
+        1,
+        [
+          5
+        ]
+      ],
+      [
+        "Jana Nielsen (J)",
+        4,
+        4,
+        [
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      [
+        "Kilian Obendorf (M)",
+        4,
+        2,
+        [
+          1,
+          3
+        ]
+      ],
+      [
+        "Bernd Doppler (J)",
+        4,
+        3,
+        [
+          1,
+          2,
+          1
+        ]
+      ],
+      [
+        "Erik Obendorf (J)",
+        4,
+        1,
+        [
+          4
+        ]
+      ],
+      [
+        "Yasin Friese (J)",
+        4,
+        1,
+        [
+          4
+        ]
+      ],
+      [
+        "Noah / Hanno Tauber (M)",
+        4,
+        3,
+        [
+          1,
+          2,
+          1
+        ]
+      ],
+      [
+        "Mads Nielsen (M)",
+        3,
+        1,
+        [
+          3
+        ]
+      ],
+      [
+        "gretchen",
+        3,
+        1,
+        [
+          3
+        ]
+      ],
+      [
+        "Greta Doppler (J)",
+        3,
+        2,
+        [
+          2,
+          1
+        ]
+      ],
+      [
+        "Magnus Nielsen (M)",
+        3,
+        1,
+        [
+          3
+        ]
+      ],
+      [
+        "Franziska Doppler (M)",
+        3,
+        1,
+        [
+          3
+        ]
+      ],
+      [
+        "Torben Wöller (J)",
+        3,
+        2,
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        "Hannah Nielsen (M)",
+        2,
+        2,
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        "Katharina Nielsen (M)",
+        2,
+        2,
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        "Egon Tiedemann (M)",
+        2,
+        1,
+        [
+          2
+        ]
+      ],
+      [
+        "Elisabeth Doppler (M)",
+        1,
+        1,
+        [
+          1
+        ]
+      ],
+      [
+        "Erik Obendorf (M)",
+        1,
+        1,
+        [
+          1
+        ]
+      ],
+      [
+        "Erna Jung",
+        1,
+        1,
+        [
+          1
+        ]
+      ],
+      [
+        "Jürgen Obendorf",
+        1,
+        1,
+        [
+          1
+        ]
+      ],
+      [
+        "Regina Tiedemann / Doppler (M)",
+        1,
+        1,
+        [
+          1
+        ]
+      ],
+      [
+        "Mikkel Nielsen / Michael Kahnwald (M)",
+        1,
+        1,
+        [
+          1
+        ]
+      ],
+      [
+        "Daniel Kahnwald",
+        1,
+        1,
+        [
+          1
+        ]
+      ]
+    ]
+  },
+  "events_per_year": {
+    "1888": 22,
+    "1890": 5,
+    "1904": 1,
+    "1910": 1,
+    "1911": 4,
+    "1920": 17,
+    "1921": 23,
+    "1953": 19,
+    "1954": 32,
+    "1971": 14,
+    "1976": 3,
+    "1985": 3,
+    "1986": 62,
+    "1987": 46,
+    "2019": 115,
+    "2020": 82,
+    "2021": 2,
+    "2023": 4,
+    "2040": 8,
+    "2041": 6,
+    "2052": 34,
+    "2053": 43
+  },
+  "graph_density": 0.0021280804305270407,
+  "cycles": [
+    15875
+  ],
+  "community_analysis": {
+    "num_communities": 19,
+    "modularity": 0.8474,
+    "community_sizes": [
+      9,
+      33,
+      39,
+      27,
+      39,
+      34,
+      28,
+      18,
+      26,
+      31,
+      24,
+      32,
+      16,
+      43,
+      31,
+      23,
+      38,
+      29,
+      22
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Graph Analysis Report</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; background: #f9f9f9; }
+    pre { background: #fff; padding: 1em; border: 1px solid #ccc; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <h1>Graph Analysis Summary</h1>
+  <pre id="output"></pre>
+  <script>
+    fetch('graph_community_analysis.json')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('output').textContent = JSON.stringify(data, null, 1);
+      });
+  </script>
+</body>
+</html>
