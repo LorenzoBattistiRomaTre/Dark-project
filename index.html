@@ -26,10 +26,17 @@
       stroke: white;
       stroke-width: 1px;
     }
+    .node.highlighted {
+      stroke: red !important;
+      stroke-width: 2px !important;
+    }
     .link {
       stroke: #ccc;
       stroke-opacity: 0.8;
-      marker-end: url(#arrow);
+    }
+    .link.highlighted {
+      stroke: red !important;
+      stroke-width: 2px !important;
     }
     .tooltip {
       position: absolute;
@@ -38,7 +45,9 @@
       padding: 5px 10px;
       border-radius: 4px;
       pointer-events: none;
-      font-size: 36px;
+      font-size: 16px;
+      line-height: 1.4;
+      max-width: 320px;
       transform-origin: top left;
     }
     .axis text {
@@ -106,11 +115,21 @@
       const yStep = 20;
       const yOffsetScale = (node) => {
         const world = normalizeWorld(node.world);
-        const baseY = yScaleWorld(world);
+        const bandIndex = worlds.indexOf(world);
+        const bandTop = bandIndex * worldBandHeight;
+        const bandBottom = (bandIndex + 1) * worldBandHeight;
+        const centerY = (bandTop + bandBottom) / 2;
+
         const ids = yOffsets[world][node.date];
         const index = ids.indexOf(node.id);
-        return baseY + index * yStep - (ids.length - 1) * yStep / 2;
+
+        const totalHeight = (ids.length - 1) * yStep;
+        const y = centerY + index * yStep - totalHeight / 2;
+
+        // Clamp to stay inside the band
+        return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
       };
+
 
       // Backgrounds
       zoomLayer.selectAll(".world-bg")
@@ -134,26 +153,57 @@
         .attr("y1", d => yOffsetScale(nodeMap[d.source]))
         .attr("x2", d => xScale(nodeMap[d.target].date))
         .attr("y2", d => yOffsetScale(nodeMap[d.target]))
-        .attr("stroke", "#ccc")
-        .attr("stroke-opacity", 0.8)
+        .attr("marker-end", "url(#arrow)")
         .on("mouseover", function(event, d) {
+          const sourceNode = nodeMap[d.source];
+          const targetNode = nodeMap[d.target];
+
           d3.select(this)
-            .attr("stroke", "orange")
-            .attr("stroke-width", 3);
+            .classed("highlighted", true)
+            .attr("marker-end", "url(#arrow-red)");
 
           d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-            .attr("stroke", "orange")
-            .attr("stroke-width", 3);
+            .classed("highlighted", true);
+
+          // Trigger tooltip on nodes
+          d3.select(`[data-id='${d.source}']`).dispatch("mouseover");
+          d3.select(`[data-id='${d.target}']`).dispatch("mouseover");
+
+          // Tooltip on link
+          const sourceCharacters = sourceNode.characters.join(", ");
+          const targetCharacters = targetNode.characters.join(", ");
+
+          tooltip
+            .style("display", "block")
+            .style("font-size", "16px")
+            .html(`
+              <strong>${d.type}</strong><br>
+              ${sourceNode.date} → ${targetNode.date}<br>
+              <em>Sorgente:</em> ${sourceCharacters}<br>
+              <em>Destinazione:</em> ${targetCharacters}
+            `);
+        })
+        .on("mousemove", event => {
+          tooltip
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY + "px");
         })
         .on("mouseout", function(event, d) {
-          d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 1);
+          d3.select(this)
+            .classed("highlighted", false)
+            .attr("marker-end", "url(#arrow)");
+
           d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-            .attr("stroke", "white")
-            .attr("stroke-width", 1);
+            .classed("highlighted", false);
+
+          d3.select(`[data-id='${d.source}']`).dispatch("mouseout");
+          d3.select(`[data-id='${d.target}']`).dispatch("mouseout");
+
+          tooltip.style("display", "none");
         });
 
       // Nodes
-      const nodeSelection = zoomLayer.selectAll(".node")
+      zoomLayer.selectAll(".node")
         .data(data.nodes)
         .enter()
         .append("circle")
@@ -163,12 +213,10 @@
         .attr("cx", d => xScale(d.date))
         .attr("cy", d => yOffsetScale(d))
         .on("mouseover", (event, d) => {
-          const scale = d3.zoomTransform(svg.node()).k;
           tooltip
             .style("display", "block")
-            .style("font-size", `36px`)
+            .style("font-size", `16px`)
             .html(`<strong>${d.label}</strong><br>${d.characters.join(", ")}`);
-        
         })
         .on("mousemove", event => {
           tooltip
@@ -181,7 +229,6 @@
       const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickPadding(10).tickFormat(d => d);
       const yAxis = d3.axisLeft(yScaleWorld);
 
-      // Add X axis
       zoomLayer.append("g")
         .attr("class", "axis")
         .attr("transform", `translate(0, ${height - 10})`)
@@ -194,42 +241,12 @@
             .attr("dy", "0.25em");
         });
 
-      // Add vertical separators for large gaps
-      const parseDate = d3.timeParse("%Y-%m-%d");
-      const indexedDates = data.event_dates.map((d, i) => ({ d, date: parseDate(d) }));
-      const dates = indexedDates.map(e => e.date);
-      dates.sort((a, b) => a - b);
-      const sortedIndexed = [...indexedDates].sort((a, b) => parseDate(a.d) - parseDate(b.d));
-
-      for (let i = 1; i < sortedIndexed.length; i++) {
-        const prevDate = sortedIndexed[i - 1].date;
-        const currDate = sortedIndexed[i].date;
-        const diffDays = (currDate - prevDate) / (1000 * 3600 * 24);
-        const x = xScale(sortedIndexed[i].d);
-        let stroke = null;
-
-        if (diffDays > 365) stroke = "#222";
-        else if (diffDays > 30) stroke = "#666";
-
-        if (stroke && x !== null) {
-          zoomLayer.append("line")
-            .attr("x1", x)
-            .attr("x2", x)
-            .attr("y1", 0)
-            .attr("y2", height)
-            .attr("stroke", stroke)
-            .attr("stroke-width", diffDays > 365 ? 3 : 2)
-            .attr("stroke-opacity", 0.3)
-            .lower();
-        }
-      }
-      
-      // Y Axis
       zoomLayer.append("g")
         .attr("class", "axis")
         .attr("transform", `translate(150, 0)`)
         .call(yAxis);
 
+      // Marker: gray arrow (default)
       svg.append("defs").append("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 -5 10 10")
@@ -241,6 +258,19 @@
         .append("path")
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "#ccc");
+
+      // Marker: red arrow (highlight)
+      svg.append("defs").append("marker")
+        .attr("id", "arrow-red")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 12)
+        .attr("refY", 0)
+        .attr("markerWidth", 7)
+        .attr("markerHeight", 7)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "red");
 
       function normalizeWorld(w) {
         if (w.includes("Martha")) return "Martha";
