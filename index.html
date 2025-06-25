@@ -8,14 +8,12 @@
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
       width: 100%;
       font-family: Arial, sans-serif;
       overflow: hidden;
     }
     svg {
       width: 100%;
-      height: 100%;
       display: block;
     }
     .world-bg {
@@ -30,12 +28,23 @@
       stroke: red !important;
       stroke-width: 2px !important;
     }
+    .node.red { fill: red !important; }
+    .node.green { fill: green !important; }
+    .node.purple { fill: purple !important; }
     .link {
       stroke: #ccc;
       stroke-opacity: 0.8;
     }
     .link.highlighted {
       stroke: red !important;
+      stroke-width: 2px !important;
+    }
+    .link.green {
+      stroke: green !important;
+      stroke-width: 2px !important;
+    }
+    .link.purple {
+      stroke: purple !important;
       stroke-width: 2px !important;
     }
     .tooltip {
@@ -67,7 +76,6 @@
     const svg = d3.select("svg");
     const tooltip = d3.select(".tooltip");
     const width = window.innerWidth;
-    const height = window.innerHeight;
 
     const colorMap = {
       "Martha": "#fbe18c",
@@ -76,34 +84,35 @@
     };
 
     const worlds = ["Martha", "Jonas", "Origin"];
-
     const zoomLayer = svg.append("g").attr("class", "zoom-layer");
-
     const zoom = d3.zoom()
       .scaleExtent([0.2, 10])
       .on("zoom", (event) => {
         zoomLayer.attr("transform", event.transform);
         tooltip.style("transform", "scale(1)");
       });
-
     svg.call(zoom);
 
     d3.json("dark_graph_data_cleaned.json").then(data => {
-      const xScale = d3.scalePoint()
-        .domain(data.event_dates)
-        .range([150, width - 150])
-        .padding(0.5);
+      const toISODate = d3.timeFormat("%Y-%m-%d");
+      const fromEuropeanDate = d3.timeParse("%d-%m-%Y");
 
-      const worldBandHeight = height / worlds.length;
-      const yScaleWorld = d3.scalePoint()
-        .domain(worlds)
-        .range([worldBandHeight / 2, height - worldBandHeight / 2]);
-
-      const yOffsets = {};
-      worlds.forEach(world => {
-        yOffsets[world] = {};
+      data.nodes.forEach(d => {
+        const parsed = fromEuropeanDate(d.date);
+        if (parsed) {
+          d.date = toISODate(parsed);
+        }
       });
 
+      const eventDates = [...data.event_dates].sort();
+      const xScale = d3.scalePoint()
+        .domain(eventDates)
+        .range([200, width - 200])
+        .padding(1.0)
+
+
+      const yOffsets = {};
+      worlds.forEach(world => yOffsets[world] = {});
       const nodeMap = {};
       data.nodes.forEach(node => {
         const world = normalizeWorld(node.world);
@@ -112,39 +121,57 @@
         nodeMap[node.id] = node;
       });
 
-      const yStep = 20;
-      const yOffsetScale = (node) => {
+      const minNodeSpacing = 22;
+      const worldMaxCounts = {};
+      worlds.forEach(world => {
+        worldMaxCounts[world] = d3.max(Object.values(yOffsets[world]), arr => arr.length) || 1;
+      });
+
+      const worldBandHeights = {};
+      worlds.forEach(world => {
+        const count = worldMaxCounts[world];
+        worldBandHeights[world] = Math.max(80, count * minNodeSpacing + 20);
+      });
+
+      const height = d3.sum(Object.values(worldBandHeights));
+      svg.attr("height", height);
+
+      const yWorldOffsets = {};
+      let cumulativeY = 0;
+      worlds.forEach(world => {
+        yWorldOffsets[world] = cumulativeY;
+        cumulativeY += worldBandHeights[world];
+      });
+
+      const yOffsetScale = node => {
         const world = normalizeWorld(node.world);
-        const bandIndex = worlds.indexOf(world);
-        const bandTop = bandIndex * worldBandHeight;
-        const bandBottom = (bandIndex + 1) * worldBandHeight;
+        const bandTop = yWorldOffsets[world];
+        const bandHeight = worldBandHeights[world];
+        const bandBottom = bandTop + bandHeight;
         const centerY = (bandTop + bandBottom) / 2;
 
         const ids = yOffsets[world][node.date];
+        const count = ids.length;
+        const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
         const index = ids.indexOf(node.id);
-
-        const totalHeight = (ids.length - 1) * yStep;
-        const y = centerY + index * yStep - totalHeight / 2;
+        const totalHeight = (count - 1) * step;
+        const y = centerY + index * step - totalHeight / 2;
 
         return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
       };
 
-      // Backgrounds
       zoomLayer.selectAll(".world-bg")
-        .data(worlds)
-        .enter()
+        .data(worlds).enter()
         .append("rect")
         .attr("class", "world-bg")
         .attr("x", 0)
-        .attr("y", (d, i) => i * worldBandHeight)
+        .attr("y", d => yWorldOffsets[d])
         .attr("width", width)
-        .attr("height", worldBandHeight)
+        .attr("height", d => worldBandHeights[d])
         .attr("fill", d => colorMap[d]);
 
-      // Links
       zoomLayer.selectAll(".link")
-        .data(data.edges)
-        .enter()
+        .data(data.edges).enter()
         .append("line")
         .attr("class", d => `link link-${d.id}`)
         .attr("x1", d => xScale(nodeMap[d.source].date))
@@ -155,54 +182,24 @@
         .on("mouseover", function(event, d) {
           const sourceNode = nodeMap[d.source];
           const targetNode = nodeMap[d.target];
-
-          d3.select(this)
-            .classed("highlighted", true)
+          d3.select(this).classed("highlighted", true)
             .attr("marker-end", "url(#arrow-red)");
-
           d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
             .classed("highlighted", true);
-
-          // Trigger tooltip on nodes
-          d3.select(`[data-id='${d.source}']`).dispatch("mouseover");
-          d3.select(`[data-id='${d.target}']`).dispatch("mouseover");
-
-          const sourceCharacters = sourceNode.characters.join(", ");
-          const targetCharacters = targetNode.characters.join(", ");
-
-          tooltip
-            .style("display", "block")
-            .style("font-size", "16px")
-            .html(`
-              <strong>${d.type}</strong><br>
-              ${sourceNode.date} → ${targetNode.date}<br>
-              <em>Sorgente:</em> ${sourceCharacters}<br>
-              <em>Destinazione:</em> ${targetCharacters}
-            `);
+          tooltip.style("display", "block")
+            .html(`<strong>${d.type}</strong><br>${sourceNode.date} → ${targetNode.date}<br><em>Sorgente:</em> ${sourceNode.characters.join(", ")}<br><em>Destinazione:</em> ${targetNode.characters.join(", ")}`);
         })
         .on("mousemove", event => {
-          tooltip
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY + "px");
+          tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
         })
         .on("mouseout", function(event, d) {
-          d3.select(this)
-            .classed("highlighted", false)
-            .attr("marker-end", "url(#arrow)");
-
-          d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-            .classed("highlighted", false);
-
-          d3.select(`[data-id='${d.source}']`).dispatch("mouseout");
-          d3.select(`[data-id='${d.target}']`).dispatch("mouseout");
-
+          d3.select(this).classed("highlighted", false).attr("marker-end", "url(#arrow)");
+          d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", false);
           tooltip.style("display", "none");
         });
 
-      // Nodes
       zoomLayer.selectAll(".node")
-        .data(data.nodes)
-        .enter()
+        .data(data.nodes).enter()
         .append("circle")
         .attr("class", "node")
         .attr("data-id", d => d.id)
@@ -210,20 +207,43 @@
         .attr("cx", d => xScale(d.date))
         .attr("cy", d => yOffsetScale(d))
         .on("mouseover", (event, d) => {
-          tooltip
-            .style("display", "block")
-            .style("font-size", "16px")
+          tooltip.style("display", "block")
             .html(`<strong>${d.label}</strong><br>${d.characters.join(", ")}`);
+          const incoming = data.edges.filter(e => e.target === d.id);
+          const outgoing = data.edges.filter(e => e.source === d.id);
+          d3.select(`[data-id='${d.id}']`).classed("red", true);
+          incoming.forEach(e => {
+            d3.select(`.link-${e.id}`)
+              .classed("purple", true)
+              .attr("marker-end", "url(#arrow-purple)");
+            d3.select(`[data-id='${e.source}']`).classed("purple", true);
+          });
+          outgoing.forEach(e => {
+            d3.select(`.link-${e.id}`)
+              .classed("green", true)
+              .attr("marker-end", "url(#arrow-green)");
+            d3.select(`[data-id='${e.target}']`).classed("green", true);
+          });
+
         })
         .on("mousemove", event => {
-          tooltip
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY + "px");
+          tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
         })
-        .on("mouseout", () => tooltip.style("display", "none"));
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
+          d3.selectAll(".node").classed("red green purple", false);
+          d3.selectAll(".link").classed("green", false).classed("purple", false).attr("marker-end", "url(#arrow)");
+        });
 
-      // Axes
-      const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickPadding(10).tickFormat(d => d);
+      const xAxis = d3.axisBottom(xScale)
+        .tickSizeOuter(0)
+        .tickPadding(10)
+        .tickFormat(d => d);
+
+      const yScaleWorld = d3.scalePoint()
+        .domain(worlds)
+        .range(worlds.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
+
       const yAxis = d3.axisLeft(yScaleWorld);
 
       zoomLayer.append("g")
@@ -243,7 +263,6 @@
         .attr("transform", `translate(150, 0)`)
         .call(yAxis);
 
-      // Marker: gray arrow (default)
       svg.append("defs").append("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 -5 10 10")
@@ -256,7 +275,6 @@
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "#ccc");
 
-      // Marker: red arrow (highlight)
       svg.append("defs").append("marker")
         .attr("id", "arrow-red")
         .attr("viewBox", "0 -5 10 10")
@@ -268,6 +286,30 @@
         .append("path")
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "red");
+
+        svg.append("defs").append("marker")
+          .attr("id", "arrow-green")
+          .attr("viewBox", "0 -5 10 10")
+          .attr("refX", 12)
+          .attr("refY", 0)
+          .attr("markerWidth", 7)
+          .attr("markerHeight", 7)
+          .attr("orient", "auto")
+          .append("path")
+          .attr("d", "M0,-5L10,0L0,5")
+          .attr("fill", "green");
+
+        svg.append("defs").append("marker")
+          .attr("id", "arrow-purple")
+          .attr("viewBox", "0 -5 10 10")
+          .attr("refX", 12)
+          .attr("refY", 0)
+          .attr("markerWidth", 7)
+          .attr("markerHeight", 7)
+          .attr("orient", "auto")
+          .append("path")
+          .attr("d", "M0,-5L10,0L0,5")
+          .attr("fill", "purple");
 
       function normalizeWorld(w) {
         if (w.includes("Martha")) return "Martha";
