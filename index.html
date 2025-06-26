@@ -4,121 +4,67 @@
   <meta charset="UTF-8" />
   <title>Dark Graph Timeline</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-    }
-    svg {
-      width: 100%;
-      display: block;
-    }
-    .world-bg {
-      opacity: 1;
-    }
-    .node {
-      fill: black;
-      stroke: white;
-      stroke-width: 1px;
-    }
-    .node.highlighted {
-      stroke: red !important;
-      stroke-width: 2px !important;
-    }
-    .node.red { fill: red !important; }
-    .node.green { fill: green !important; }
-    .node.purple { fill: purple !important; }
-    .link {
-      stroke: #ccc;
-      stroke-opacity: 0.8;
-    }
-    .link.highlighted {
-      stroke: red !important;
-      stroke-width: 2px !important;
-    }
-    .link.green {
-      stroke: green !important;
-      stroke-width: 2px !important;
-    }
-    .link.purple {
-      stroke: purple !important;
-      stroke-width: 2px !important;
-    }
-    .tooltip {
-      position: absolute;
-      background: #333;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 4px;
-      pointer-events: none;
-      font-size: 16px;
-      line-height: 1.4;
-      max-width: 320px;
-      transform-origin: top left;
-    }
-    .axis text {
-      fill: #222;
-      font-size: 12px;
-    }
-    .axis line,
-    .axis path {
-      stroke: #444;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <button id="resetView">Reset Vista Compatta</button>
   <svg></svg>
   <div class="tooltip" style="display: none;"></div>
   <script>
     const svg = d3.select("svg");
     const tooltip = d3.select(".tooltip");
     const width = window.innerWidth;
-
-    const colorMap = {
-      "Martha": "#fbe18c",
-      "Jonas": "#a1e6a1",
-      "Origin": "#b6d8ff",
-    };
-
+    const colorMap = { "Martha": "#fbe18c", "Jonas": "#a1e6a1", "Origin": "#b6d8ff" };
     const worlds = ["Martha", "Jonas", "Origin"];
     const zoomLayer = svg.append("g").attr("class", "zoom-layer");
-    const zoom = d3.zoom()
-      .scaleExtent([0.2, 10])
-      .on("zoom", (event) => {
-        zoomLayer.attr("transform", event.transform);
-        tooltip.style("transform", "scale(1)");
-      });
+    const zoom = d3.zoom().scaleExtent([0.2, 10]).on("zoom", (event) => {
+      zoomLayer.attr("transform", event.transform);
+      tooltip.style("transform", "scale(1)");
+    });
     svg.call(zoom);
+
+    svg.append("defs").selectAll("marker")
+      .data([
+        { id: "arrow", color: "#ccc" },
+        { id: "arrow-red", color: "red" },
+        { id: "arrow-green", color: "green" },
+        { id: "arrow-purple", color: "purple" },
+      ])
+      .enter()
+      .append("marker")
+      .attr("id", d => d.id)
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 12)
+      .attr("refY", 0)
+      .attr("markerWidth", 7)
+      .attr("markerHeight", 7)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", d => d.color);
 
     d3.json("dark_graph_data_cleaned.json").then(data => {
       const toISODate = d3.timeFormat("%Y-%m-%d");
       const fromEuropeanDate = d3.timeParse("%d-%m-%Y");
-
+      const nodeMap = {};
       data.nodes.forEach(d => {
         const parsed = fromEuropeanDate(d.date);
-        if (parsed) {
-          d.date = toISODate(parsed);
-        }
+        if (parsed) d.date = toISODate(parsed);
+        nodeMap[d.id] = d;
       });
-
-      const eventDates = [...data.event_dates].sort();
+      const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
+      const spacing = 50; // aumenta da default (circa 50) a 150 per triplicare la distanza
       const xScale = d3.scalePoint()
-        .domain(eventDates)
-        .range([200, width - 200])
-        .padding(1.0)
-
+        .domain(allDates)
+        .range([200, 200 + spacing * (allDates.length - 1)])
+        .padding(1.0);
 
       const yOffsets = {};
       worlds.forEach(world => yOffsets[world] = {});
-      const nodeMap = {};
       data.nodes.forEach(node => {
         const world = normalizeWorld(node.world);
         if (!yOffsets[world][node.date]) yOffsets[world][node.date] = [];
         yOffsets[world][node.date].push(node.id);
-        nodeMap[node.id] = node;
       });
 
       const minNodeSpacing = 22;
@@ -143,179 +89,253 @@
         cumulativeY += worldBandHeights[world];
       });
 
-      const yOffsetScale = node => {
-        const world = normalizeWorld(node.world);
-        const bandTop = yWorldOffsets[world];
-        const bandHeight = worldBandHeights[world];
-        const bandBottom = bandTop + bandHeight;
-        const centerY = (bandTop + bandBottom) / 2;
-
-        const ids = yOffsets[world][node.date];
-        const count = ids.length;
-        const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
-        const index = ids.indexOf(node.id);
-        const totalHeight = (count - 1) * step;
-        const y = centerY + index * step - totalHeight / 2;
-
-        return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
-      };
-
-      zoomLayer.selectAll(".world-bg")
-        .data(worlds).enter()
-        .append("rect")
-        .attr("class", "world-bg")
-        .attr("x", 0)
-        .attr("y", d => yWorldOffsets[d])
-        .attr("width", width)
-        .attr("height", d => worldBandHeights[d])
-        .attr("fill", d => colorMap[d]);
-
-      zoomLayer.selectAll(".link")
-        .data(data.edges).enter()
-        .append("line")
-        .attr("class", d => `link link-${d.id}`)
-        .attr("x1", d => xScale(nodeMap[d.source].date))
-        .attr("y1", d => yOffsetScale(nodeMap[d.source]))
-        .attr("x2", d => xScale(nodeMap[d.target].date))
-        .attr("y2", d => yOffsetScale(nodeMap[d.target]))
-        .attr("marker-end", "url(#arrow)")
-        .on("mouseover", function(event, d) {
-          const sourceNode = nodeMap[d.source];
-          const targetNode = nodeMap[d.target];
-          d3.select(this).classed("highlighted", true)
-            .attr("marker-end", "url(#arrow-red)");
-          d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-            .classed("highlighted", true);
-          tooltip.style("display", "block")
-            .html(`<strong>${d.type}</strong><br>${sourceNode.date} → ${targetNode.date}<br><em>Sorgente:</em> ${sourceNode.characters.join(", ")}<br><em>Destinazione:</em> ${targetNode.characters.join(", ")}`);
-        })
-        .on("mousemove", event => {
-          tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
-        })
-        .on("mouseout", function(event, d) {
-          d3.select(this).classed("highlighted", false).attr("marker-end", "url(#arrow)");
-          d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", false);
-          tooltip.style("display", "none");
-        });
-
-      zoomLayer.selectAll(".node")
-        .data(data.nodes).enter()
-        .append("circle")
-        .attr("class", "node")
-        .attr("data-id", d => d.id)
-        .attr("r", 6)
-        .attr("cx", d => xScale(d.date))
-        .attr("cy", d => yOffsetScale(d))
-        .on("mouseover", (event, d) => {
-          tooltip.style("display", "block")
-            .html(`<strong>${d.label}</strong><br>${d.characters.join(", ")}`);
-          const incoming = data.edges.filter(e => e.target === d.id);
-          const outgoing = data.edges.filter(e => e.source === d.id);
-          d3.select(`[data-id='${d.id}']`).classed("red", true);
-          incoming.forEach(e => {
-            d3.select(`.link-${e.id}`)
-              .classed("purple", true)
-              .attr("marker-end", "url(#arrow-purple)");
-            d3.select(`[data-id='${e.source}']`).classed("purple", true);
-          });
-          outgoing.forEach(e => {
-            d3.select(`.link-${e.id}`)
-              .classed("green", true)
-              .attr("marker-end", "url(#arrow-green)");
-            d3.select(`[data-id='${e.target}']`).classed("green", true);
-          });
-
-        })
-        .on("mousemove", event => {
-          tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
-        })
-        .on("mouseout", () => {
-          tooltip.style("display", "none");
-          d3.selectAll(".node").classed("red green purple", false);
-          d3.selectAll(".link").classed("green", false).classed("purple", false).attr("marker-end", "url(#arrow)");
-        });
-
-      const xAxis = d3.axisBottom(xScale)
-        .tickSizeOuter(0)
-        .tickPadding(10)
-        .tickFormat(d => d);
-
-      const yScaleWorld = d3.scalePoint()
-        .domain(worlds)
-        .range(worlds.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
-
-      const yAxis = d3.axisLeft(yScaleWorld);
-
-      zoomLayer.append("g")
-        .attr("class", "axis")
-        .attr("transform", `translate(0, ${height - 10})`)
-        .call(g => {
-          g.call(xAxis);
-          g.selectAll("text")
-            .attr("text-anchor", "end")
-            .attr("transform", "rotate(-45)")
-            .attr("dx", "-0.5em")
-            .attr("dy", "0.25em");
-        });
-
-      zoomLayer.append("g")
-        .attr("class", "axis")
-        .attr("transform", `translate(150, 0)`)
-        .call(yAxis);
-
-      svg.append("defs").append("marker")
-        .attr("id", "arrow")
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 12)
-        .attr("refY", 0)
-        .attr("markerWidth", 7)
-        .attr("markerHeight", 7)
-        .attr("orient", "auto")
-        .append("path")
-        .attr("d", "M0,-5L10,0L0,5")
-        .attr("fill", "#ccc");
-
-      svg.append("defs").append("marker")
-        .attr("id", "arrow-red")
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 12)
-        .attr("refY", 0)
-        .attr("markerWidth", 7)
-        .attr("markerHeight", 7)
-        .attr("orient", "auto")
-        .append("path")
-        .attr("d", "M0,-5L10,0L0,5")
-        .attr("fill", "red");
-
-        svg.append("defs").append("marker")
-          .attr("id", "arrow-green")
-          .attr("viewBox", "0 -5 10 10")
-          .attr("refX", 12)
-          .attr("refY", 0)
-          .attr("markerWidth", 7)
-          .attr("markerHeight", 7)
-          .attr("orient", "auto")
-          .append("path")
-          .attr("d", "M0,-5L10,0L0,5")
-          .attr("fill", "green");
-
-        svg.append("defs").append("marker")
-          .attr("id", "arrow-purple")
-          .attr("viewBox", "0 -5 10 10")
-          .attr("refX", 12)
-          .attr("refY", 0)
-          .attr("markerWidth", 7)
-          .attr("markerHeight", 7)
-          .attr("orient", "auto")
-          .append("path")
-          .attr("d", "M0,-5L10,0L0,5")
-          .attr("fill", "purple");
-
       function normalizeWorld(w) {
         if (w.includes("Martha")) return "Martha";
         if (w.includes("Jonas")) return "Jonas";
         return "Origin";
       }
+
+      function groupNodes() {
+        const groups = [], visited = new Set();
+        data.nodes.forEach(node => {
+          if (visited.has(node.id)) return;
+          const world = normalizeWorld(node.world);
+          const date = node.date;
+          const sameDateNodes = data.nodes.filter(n => n.date === date && normalizeWorld(n.world) === world);
+          const connected = new Set([node.id]);
+          let changed = true;
+          while (changed) {
+            changed = false;
+            data.edges.forEach(edge => {
+              const s = edge.source, t = edge.target;
+              if (connected.has(s) && sameDateNodes.some(n => n.id === t) && !connected.has(t)) { connected.add(t); changed = true; }
+              if (connected.has(t) && sameDateNodes.some(n => n.id === s) && !connected.has(s)) { connected.add(s); changed = true; }
+            });
+          }
+          const ids = Array.from(connected);
+          groups.push({ ids, representative: node, exploded: false });
+          ids.forEach(id => visited.add(id));
+        });
+        return groups;
+      }
+
+      const groups = groupNodes();
+
+      function yOffsetScale(node) {
+  const world = normalizeWorld(node.world);
+  const bandTop = yWorldOffsets[world];
+  const bandHeight = worldBandHeights[world];
+  const bandBottom = bandTop + bandHeight;
+
+  if (node.isGroup && node.group) {
+    const ys = node.group.ids.map(id => {
+      const n = nodeMap[id];
+      const ids = yOffsets[world][n.date] || [n.id];
+      const count = ids.length;
+      const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
+      const index = ids.indexOf(n.id);
+      const totalHeight = (count - 1) * step;
+      const centerY = bandTop + bandHeight / 2;
+      return Math.max(bandTop + 10, Math.min(bandBottom - 10, centerY + index * step - totalHeight / 2));
+    });
+    return d3.mean(ys);
+  }
+
+  const ids = yOffsets[world][node.date] || [node.id];
+  if (!ids.includes(node.id)) ids.push(node.id);
+  const count = ids.length;
+  const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
+  const index = ids.indexOf(node.id);
+  const totalHeight = (count - 1) * step;
+  const centerY = bandTop + bandHeight / 2;
+  const y = centerY + index * step - totalHeight / 2;
+
+  return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
+      }
+
+      function render() {
+        // Ripristina assi
+        zoomLayer.append("g")
+          .attr("class", "axis")
+          .attr("transform", `translate(0, ${height - 10})`)
+          .call(d3.axisBottom(xScale).tickSizeOuter(0).tickPadding(10))
+          .selectAll("text")
+          .attr("text-anchor", "end")
+          .attr("transform", "rotate(-45)")
+          .attr("dx", "-0.5em")
+          .attr("dy", "0.25em");
+
+        const yScaleWorld = d3.scalePoint()
+          .domain(worlds)
+          .range(worlds.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
+
+        zoomLayer.selectAll(".axis-y").remove();
+
+        zoomLayer.append("g")
+          .attr("class", "axis axis-y")
+          .attr("transform", `translate(150, 0)`)
+          .call(d3.axisLeft(yScaleWorld));
+        zoomLayer.selectAll(".node, .link, .world-bg, .world-label").remove(); // mantieni gli assi per renderli persistenti
+
+        const nodesToRender = [];
+        groups.forEach(g => {
+          if (g.exploded) {
+            g.ids.forEach(id => nodesToRender.push(nodeMap[id]));
+          } else {
+            const rep = g.representative;
+            const label = g.ids.length === 1 ? rep.label : g.ids.length + " eventi";
+            nodesToRender.push({
+              id: g.ids.join(","),
+              label,
+              date: rep.date,
+              world: normalizeWorld(rep.world),
+              isGroup: g.ids.length > 1,
+              group: g,
+              size: g.ids.length
+            });
+          }
+        });
+
+        zoomLayer.selectAll(".world-bg")
+          .data(worlds).enter()
+          .append("rect")
+          .attr("class", "world-bg")
+          .attr("x", 0)
+          .attr("y", d => yWorldOffsets[d])
+          .attr("width", 200 + spacing * (allDates.length - 1))
+          .attr("height", d => worldBandHeights[d])
+          .attr("fill", d => colorMap[d]);
+
+        zoomLayer.selectAll(".world-label")
+          .data(worlds).enter()
+          .append("text")
+          .attr("class", "world-label")
+          .attr("x", 10)
+          .attr("y", d => yWorldOffsets[d] + worldBandHeights[d] / 2)
+          .attr("dy", "0.35em")
+          .attr("text-anchor", "start")
+          .attr("transform", d => `rotate(-90, 10, ${yWorldOffsets[d] + worldBandHeights[d] / 2})`)
+          .text(d => d)
+
+        const idToNode = Object.fromEntries(nodesToRender.map(n => [n.id, n]));
+
+        const positionMap = {};
+data.nodes.forEach(d => {
+  const nodeObj = {
+    id: d.id,
+    date: d.date,
+    world: normalizeWorld(d.world)
+  };
+  positionMap[d.id] = {
+    x: xScale(d.date),
+    y: yOffsetScale(nodeObj)
+  };
+});
+nodesToRender.forEach(d => {
+  positionMap[d.id] = {
+    x: xScale(d.date),
+    y: yOffsetScale(d)
+  };
+});
+
+const edgesToRender = data.edges.map(e => {
+  const sourceGroup = groups.find(g => g.ids.includes(e.source));
+  const targetGroup = groups.find(g => g.ids.includes(e.target));
+  const source = sourceGroup.exploded ? e.source : sourceGroup.ids.join(",");
+  const target = targetGroup.exploded ? e.target : targetGroup.ids.join(",");
+
+  const dx = positionMap[target].x - positionMap[source].x;
+  const dy = positionMap[target].y - positionMap[source].y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const offset = 8;
+  const ratio = dist > 0 ? (offset / dist) : 0;
+
+  const x1 = positionMap[source].x + dx * ratio;
+  const y1 = positionMap[source].y + dy * ratio;
+  const x2 = positionMap[target].x - dx * ratio;
+  const y2 = positionMap[target].y - dy * ratio;
+
+  return {
+    ...e,
+    source,
+    target,
+    x1,
+    y1,
+    x2,
+    y2
+  };
+});
+
+        zoomLayer.selectAll(".link")
+          .data(edgesToRender).enter()
+          .append("line")
+          .attr("class", d => `link link-${d.id}`)
+          .attr("x1", d => d.x1)
+          .attr("y1", d => d.y1)
+          .attr("x2", d => d.x2)
+          .attr("y2", d => d.y2)
+          .attr("marker-end", "url(#arrow)")
+          .on("mouseover", function(event, d) {
+            d3.select(this).classed("highlighted", true).attr("marker-end", "url(#arrow-red)");
+            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", true);
+            tooltip.style("display", "block")
+              .html(`<strong>${d.type || 'Arco'}</strong><br><em>Sorgente:</em> ${d.source}<br><em>Destinazione:</em> ${d.target}`);
+          })
+          .on("mousemove", event => {
+            tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
+          })
+          .on("mouseout", function(event, d) {
+            d3.select(this).classed("highlighted", false).attr("marker-end", "url(#arrow)");
+            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", false);
+            tooltip.style("display", "none");
+          });
+
+        zoomLayer.selectAll(".node")
+          .data(nodesToRender).enter()
+          .append("circle")
+          .attr("class", "node")
+          .attr("data-id", d => d.id)
+          .attr("r", d => d.isGroup ? 6 + Math.sqrt(d.size) * 2 : 6)
+          .attr("cx", d => xScale(d.date))
+          .attr("cy", d => yOffsetScale(d))
+          .on("mouseover", (event, d) => {
+            tooltip.style("display", "block")
+              .html(`<strong>${d.label}</strong>`);
+            const idList = d.group ? d.group.ids : [d.id];
+            const incoming = data.edges.filter(e => idList.includes(e.target));
+            const outgoing = data.edges.filter(e => idList.includes(e.source));
+            d3.select(`[data-id='${d.id}']`).classed("red", true);
+            incoming.forEach(e => {
+              d3.select(`.link-${e.id}`).classed("purple", true).attr("marker-end", "url(#arrow-purple)");
+              d3.select(`[data-id='${e.source}']`).classed("purple", true);
+            });
+            outgoing.forEach(e => {
+              d3.select(`.link-${e.id}`).classed("green", true).attr("marker-end", "url(#arrow-green)");
+              d3.select(`[data-id='${e.target}']`).classed("green", true);
+            });
+          })
+          .on("mousemove", event => {
+            tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
+          })
+          .on("mouseout", () => {
+            tooltip.style("display", "none");
+            d3.selectAll(".node").classed("red green purple", false);
+            d3.selectAll(".link").classed("green", false).classed("purple", false).attr("marker-end", "url(#arrow)");
+          })
+          .on("click", (event, d) => {
+            if (d.isGroup && d.group) {
+              d.group.exploded = true;
+              render();
+            }
+          });
+
+        d3.select("#resetView").on("click", () => {
+          groups.forEach(g => g.exploded = false);
+          render();
+        });
+      }
+
+      render();
     });
   </script>
 </body>
