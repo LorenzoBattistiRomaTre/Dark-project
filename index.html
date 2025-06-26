@@ -184,6 +184,8 @@
           } else {
             const rep = g.representative;
             const label = g.ids.length === 1 ? rep.label : g.ids.length + " eventi";
+            const characters = g.ids.length === 1 ? rep.characters : [];
+
             nodesToRender.push({
               id: g.ids.join(","),
               label,
@@ -191,7 +193,8 @@
               world: normalizeWorld(rep.world),
               isGroup: g.ids.length > 1,
               group: g,
-              size: g.ids.length
+              size: g.ids.length,
+              characters: g.ids.length === 1 ? rep.characters : []
             });
           }
         });
@@ -290,44 +293,98 @@ const edgesToRender = data.edges.map(e => {
             tooltip.style("display", "none");
           });
 
-        zoomLayer.selectAll(".node")
-          .data(nodesToRender).enter()
-          .append("circle")
-          .attr("class", "node")
-          .attr("data-id", d => d.id)
-          .attr("r", d => d.isGroup ? 6 + Math.sqrt(d.size) * 2 : 6)
-          .attr("cx", d => xScale(d.date))
-          .attr("cy", d => yOffsetScale(d))
-          .on("mouseover", (event, d) => {
-            tooltip.style("display", "block")
-              .html(`<strong>${d.label}</strong>`);
-            const idList = d.group ? d.group.ids : [d.id];
-            const incoming = data.edges.filter(e => idList.includes(e.target));
-            const outgoing = data.edges.filter(e => idList.includes(e.source));
-            d3.select(`[data-id='${d.id}']`).classed("red", true);
-            incoming.forEach(e => {
-              d3.select(`.link-${e.id}`).classed("purple", true).attr("marker-end", "url(#arrow-purple)");
-              d3.select(`[data-id='${e.source}']`).classed("purple", true);
-            });
-            outgoing.forEach(e => {
-              d3.select(`.link-${e.id}`).classed("green", true).attr("marker-end", "url(#arrow-green)");
-              d3.select(`[data-id='${e.target}']`).classed("green", true);
-            });
-          })
-          .on("mousemove", event => {
-            tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
-          })
-          .on("mouseout", () => {
-            tooltip.style("display", "none");
-            d3.selectAll(".node").classed("red green purple", false);
-            d3.selectAll(".link").classed("green", false).classed("purple", false).attr("marker-end", "url(#arrow)");
-          })
-          .on("click", (event, d) => {
-            if (d.isGroup && d.group) {
-              d.group.exploded = true;
-              render();
-            }
-          });
+          zoomLayer.selectAll(".node")
+      .data(nodesToRender).enter()
+      .append(d => {
+        const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));
+        return isTrigger ? document.createElementNS(d3.namespaces.svg, "path") : document.createElementNS(d3.namespaces.svg, "circle");
+      })
+      .attr("class", "node")
+      .attr("data-id", d => d.id)
+      .attr("transform", d => `translate(${xScale(d.date)},${yOffsetScale(d)})`)
+      .attr("d", d => {
+        const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));
+        if (isTrigger) {
+          const baseSize = d.isGroup ? 6 + Math.sqrt(d.size) * 2 : 6;
+          const size = baseSize * 1.5;
+          const height = size * Math.sqrt(3) / 2;
+          return `M 0 ${-height/2} L ${-size/2} ${height/2} L ${size/2} ${height/2} Z`;
+        }
+        return null;
+      })
+      .attr("r", d => {
+        const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));
+        return isTrigger ? null : (d.isGroup ? 6 + Math.sqrt(d.size) * 2 : 6);
+      })
+      .style("fill", d => {
+        const hasDeath = d.death || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.death));
+        return hasDeath ? "red" : "black";
+      })
+      .on("mouseover", (event, d) => {
+        tooltip.style("display", "block")
+          .html(`<strong>${d.label}</strong>`);
+        const idList = d.group ? d.group.ids : [d.id];
+        const incoming = data.edges.filter(e => idList.includes(e.target));
+        const outgoing = data.edges.filter(e => idList.includes(e.source));
+        d3.select(`[data-id='${d.id}']`).classed("red", true);
+        incoming.forEach(e => {
+          d3.select(`.link-${e.id}`).classed("purple", true).attr("marker-end", "url(#arrow-purple)");
+          d3.select(`[data-id='${e.source}']`).classed("purple", true);
+        });
+        outgoing.forEach(e => {
+          d3.select(`.link-${e.id}`).classed("green", true).attr("marker-end", "url(#arrow-green)");
+          d3.select(`[data-id='${e.target}']`).classed("green", true);
+        });
+      })
+      .on("mousemove", event => {
+        tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.style("display", "none");
+        d3.selectAll(".node").classed("red green purple", false);
+        d3.selectAll(".link").classed("green", false).classed("purple", false).attr("marker-end", "url(#arrow)");
+      })
+      .on("click", (event, d) => {
+        if (!d.isGroup) openPanel(d);
+        if (d.isGroup && d.group) {
+          d.group.exploded = true;
+          render();
+        }
+      });
+
+        function getPhotoFilename(charName, date) {
+          if (!date) return null;
+          const yearPrefix = date.split("-")[0].substring(0, 3);
+          let name = charName.replace(/\s\([A-Z]\)/, "").replace(/\//g, "__").replace(/ /g, "_");
+          return `${name}_in_${yearPrefix}.jpg`;
+        }
+
+        function openPanel(nodeData) {
+          const content = document.getElementById("panel-content");
+          const title = `<h2 style="margin-bottom: 20px;">${nodeData.label}</h2>`;
+          const date = nodeData.date;
+          const yearPrefix = date ? date.split("-")[0].substring(0, 3) : "";
+          const characters = Array.isArray(nodeData.characters) ? nodeData.characters : [];
+          const charactersHtml = characters.map(char => {
+            let name = char.replace(/\s\([A-Z]\)/, "").replace(/\//g, "__").replace(/ /g, "_");
+            const photoWithYear = `${name}_in_${yearPrefix}.jpg`;
+            const photoWithoutYear = `${name}.jpg`;
+            return `
+              <div style="background-color: #000; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.6); margin-bottom: 30px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="photo/${photoWithYear}" alt="${char}" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='photo/${photoWithoutYear}'">
+                <div style="padding: 10px 15px; background-color: #000; color: white; text-align: center; font-family: 'Segoe UI', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: 0.5px;">${char}</div>
+              </div>
+            `;
+          }).join("");
+          content.innerHTML = title + charactersHtml;
+          document.getElementById("side-panel").classList.add("open");
+        }
+
+        function closePanel() {
+          const panel = document.getElementById("side-panel");
+          panel.classList.remove("open");
+          document.getElementById("panel-content").innerHTML = "";
+        }
 
         d3.select("#resetView").on("click", () => {
           groups.forEach(g => g.exploded = false);
