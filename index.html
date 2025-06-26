@@ -54,6 +54,22 @@
 <body>
   <svg></svg>
   <div class="tooltip" style="display: none;"></div>
+  <div id="side-panel" style="
+    position: absolute;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+    overflow-y: auto;
+    padding: 20px;
+    transition: right 0.3s ease;
+    z-index: 10;
+  ">
+    <button onclick="closePanel()" style="float:right;">✖</button>
+    <div id="panel-content"></div>
+  </div>
   <script>
     const svg = d3.select("svg");
     const tooltip = d3.select(".tooltip");
@@ -79,7 +95,7 @@
 
     svg.call(zoom);
 
-    d3.json("dark_graph_data_cleaned.json").then(data => {
+    d3.json("dark_graph_data_cleaned_after_fixed.json").then(data => {
       const xScale = d3.scalePoint()
         .domain(data.event_dates)
         .range([150, width - 150])
@@ -156,26 +172,40 @@
       const nodeSelection = zoomLayer.selectAll(".node")
         .data(data.nodes)
         .enter()
-        .append("circle")
+        .append(d => d.important_trigger ? document.createElementNS(d3.namespaces.svg, "path") : document.createElementNS(d3.namespaces.svg, "circle"))
         .attr("class", "node")
         .attr("data-id", d => d.id)
-        .attr("r", 6)
-        .attr("cx", d => xScale(d.date))
-        .attr("cy", d => yOffsetScale(d))
+        .attr("transform", d => {
+          const x = xScale(d.date);
+          const y = yOffsetScale(d);
+          return `translate(${x},${y})`;
+        })
+        .attr("d", d => {
+          if (d.important_trigger) {
+            const size = 12;
+            const height = size * Math.sqrt(3) / 2;
+            return `M 0 ${-height/2} L ${-size/2} ${height/2} L ${size/2} ${height/2} Z`;
+          }
+          return null;
+        })
+        .attr("r", d => d.important_trigger ? null : 6)
+        .style("fill", d => d.death ? "red" : "black")
         .on("mouseover", (event, d) => {
-          const scale = d3.zoomTransform(svg.node()).k;
           tooltip
             .style("display", "block")
             .style("font-size", `36px`)
             .html(`<strong>${d.label}</strong><br>${d.characters.join(", ")}`);
-        
         })
         .on("mousemove", event => {
           tooltip
             .style("left", event.pageX + 10 + "px")
             .style("top", event.pageY + "px");
         })
-        .on("mouseout", () => tooltip.style("display", "none"));
+        .on("mouseout", () => tooltip.style("display", "none"))
+        .on("click", (event, d) => {
+          openPanel(d);
+        });
+
 
       // Axes
       const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickPadding(10).tickFormat(d => d);
@@ -247,7 +277,80 @@
         if (w.includes("Jonas")) return "Jonas";
         return "Origin";
       }
-    });
+    })
+    function getPhotoFilename(charName, date) {
+      if (!date) return null;
+
+      const yearPrefix = date.split("-")[0].substring(0, 3); // es. "1986" → "198"
+
+      // Rimuove suffissi come (J), (M), (O)
+      let name = charName.replace(/\s\([A-Z]\)/, "");
+
+      // Sostituzioni precise:
+      // - slash `/` → `__`
+      // - spazi → `_`
+      name = name.replace(/\//g, "__").replace(/ /g, "_");
+
+      return `${name}_in_${yearPrefix}.jpg`;
+    }
+
+    function openPanel(nodeData) {
+      const content = document.getElementById("panel-content");
+      const title = `<h2 style="margin-bottom: 20px;">${nodeData.label}</h2>`;
+      const date = nodeData.date;
+      const yearPrefix = date ? date.split("-")[0].substring(0, 3) : "";
+
+      const charactersHtml = nodeData.characters.map(char => {
+        let name = char.replace(/\s\([A-Z]\)/, "");
+        name = name.replace(/\//g, "__").replace(/ /g, "_");
+        const photoWithYear = `${name}_in_${yearPrefix}.jpg`;
+        const photoWithoutYear = `${name}.jpg`;
+        
+      return `
+        <div style="
+          background-color: #000;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+          margin-bottom: 30px;
+          transition: transform 0.2s;
+        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+          <img 
+            src="photo/${photoWithYear}" 
+            alt="${char}" 
+            style="width: 100%; height: auto; display: block;" 
+            onerror="this.onerror=null; this.src='photo/${photoWithoutYear}'"
+          >
+          <div style="
+            padding: 10px 15px;
+            background-color: #000;
+            color: white;
+            text-align: center;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+          ">
+            ${char}
+          </div>
+        </div>
+      `;
+
+      }).join("");
+
+      content.innerHTML = title + charactersHtml;
+      document.getElementById("side-panel").style.right = "0px";
+    }
+
+
+
+
+    function closePanel() {
+      const panel = document.getElementById("side-panel");
+      panel.style.right = "-400px";
+      document.getElementById("panel-content").innerHTML = ""; // Svuota contenuto
+    }
+
   </script>
 </body>
 </html>
