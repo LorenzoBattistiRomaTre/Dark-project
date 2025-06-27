@@ -10,6 +10,20 @@
   <button id="resetView">Reset Vista Compatta</button>
   <svg></svg>
   <div class="tooltip" style="display: none;"></div>
+  <div id="side-panel">
+    <button id="close-panel-btn" style="
+      background: #444;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    ">Chiudi</button>
+    <div id="panel-content"></div>
+  </div>
+
+
+
   <script>
     const svg = d3.select("svg");
     const tooltip = d3.select(".tooltip");
@@ -25,7 +39,7 @@
 
     svg.append("defs").selectAll("marker")
       .data([
-        { id: "arrow", color: "#ccc" },
+        { id: "arrow", color: "#999" },
         { id: "arrow-red", color: "red" },
         { id: "arrow-green", color: "green" },
         { id: "arrow-purple", color: "purple" },
@@ -42,6 +56,16 @@
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", d => d.color);
+
+
+    function closePanel() {
+          const panel = document.getElementById("side-panel");
+          panel.classList.remove("open");
+          document.getElementById("panel-content").innerHTML = "";
+    }
+    document.getElementById("close-panel-btn").addEventListener("click", closePanel);
+
+
 
     d3.json("dark_graph_data_cleaned.json").then(data => {
       const toISODate = d3.timeFormat("%Y-%m-%d");
@@ -381,11 +405,7 @@ const edgesToRender = data.edges.map(e => {
           document.getElementById("side-panel").classList.add("open");
         }
 
-        function closePanel() {
-          const panel = document.getElementById("side-panel");
-          panel.classList.remove("open");
-          document.getElementById("panel-content").innerHTML = "";
-        }
+
 
         d3.select("#resetView").on("click", () => {
           groups.forEach(g => g.exploded = false);
