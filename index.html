@@ -278,6 +278,7 @@ const edgesToRender = data.edges.map(e => {
           .attr("x2", d => d.x2)
           .attr("y2", d => d.y2)
           .attr("marker-end", "url(#arrow)")
+          .attr("stroke-dasharray", d => d.type === "dashed arrow" ? "5,5" : null)
           .on("mouseover", function(event, d) {
             d3.select(this).classed("highlighted", true).attr("marker-end", "url(#arrow-red)");
             d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", true);
