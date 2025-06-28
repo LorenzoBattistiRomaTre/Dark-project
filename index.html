@@ -43,6 +43,10 @@
         { id: "arrow-red", color: "red" },
         { id: "arrow-green", color: "green" },
         { id: "arrow-purple", color: "purple" },
+        
+        { id: "arrow-blue", color: "#6495ED" }, //Successful Time Travel
+        { id: "arrow-orange", color: "#FF6A00" }, //Failed Time Travel
+        { id: "arrow-pink", color: "hotpink" } //World Swap
       ])
       .enter()
       .append("marker")
@@ -301,7 +305,24 @@ const edgesToRender = data.edges.map(e => {
           .attr("y1", d => d.y1)
           .attr("x2", d => d.x2)
           .attr("y2", d => d.y2)
-          .attr("marker-end", "url(#arrow)")
+          //.attr("marker-end", "url(#arrow)")
+          //modifica colore marker end per tipi specifici
+          .attr("marker-end", d => {
+              if (d.type === "Succesfull Time Travel") return "url(#arrow-blue)";
+              if (d.type === "Failed Time Travel") return "url(#arrow-orange)";
+              if (d.type === "World Swap") return "url(#arrow-pink)";
+              return "url(#arrow)";
+          })
+          //modifica colore linea per Successful Time Travel
+          .style("stroke", d => {
+            if (d.type === "Succesfull Time Travel") return "#6495ED";
+            if (d.type === "Failed Time Travel") return "#FF6A00";
+            if (d.type === "World Swap") return "hotpink";
+            return "#999"
+          })
+
+
+
           .attr("stroke-dasharray", d => d.type === "dashed arrow" ? "5,5" : null)
           .on("mouseover", function(event, d) {
             d3.select(this).classed("highlighted", true).attr("marker-end", "url(#arrow-red)");
