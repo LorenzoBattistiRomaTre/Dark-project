@@ -117,6 +117,46 @@
         cumulativeY += worldBandHeights[world];
       });
 
+
+      //INIZIO AGGIUNTA TIMELINE RAGGRUPPATA SUPERIORE - ELIMINARE FINO ALLA FINE PER RIMUOVERE
+      const timeBands = [
+        { start: 1850, end: 1899, label: "1850–1899" },
+        { start: 1900, end: 1949, label: "1900–1949" },
+        { start: 1950, end: 1999, label: "1950–1999" },
+        { start: 2000, end: 2049, label: "2000–2049" },
+        { start: 2050, end: 2100, label: "2050+" }
+      ];
+      const bandGroup = zoomLayer.append("g").attr("class", "top-timebands");
+      // Trova le date esistenti per l’intervallo
+      timeBands.forEach((band, i) => {
+        const matchingDates = allDates.filter(d => {
+          const y = new Date(d).getFullYear();
+          return y >= band.start && y <= band.end;
+        });
+        if (matchingDates.length === 0) return;
+        const x0 = xScale(matchingDates[0]);
+        const x1 = xScale(matchingDates[matchingDates.length - 1]);
+        if (x0 !== undefined && x1 !== undefined) {
+          const width = x1 - x0 + 30;
+          bandGroup.append("rect")
+            .attr("x", x0 - 15)
+            .attr("y", -30) // posizione sopra il grafo
+            .attr("width", width)
+            .attr("height", 30)
+            .attr("fill", "rgba(220,220,220,0.8)")
+            .attr("stroke", "#aaa");
+          bandGroup.append("text")
+            .attr("x", x0 + width / 2)
+            .attr("text-anchor", "middle")
+            .attr("y", -10)
+            .text(band.label)
+            .attr("font-size", "25px")
+            .attr("font-weight", "bold")
+            .attr("fill", "#333");
+        }
+      });
+      //FINE TIMELINE RAGGRUPPATA SUPERIORE
+
       function normalizeWorld(w) {
         if (w.includes("Martha")) return "Martha";
         if (w.includes("Jonas")) return "Jonas";
