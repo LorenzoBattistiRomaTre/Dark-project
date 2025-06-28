@@ -81,6 +81,20 @@
         nodeMap[d.id] = d;
       });
       const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
+
+      //inizio modifica
+      // Mappa per alternare sfumature di colore per anno
+      const yearColorMap = {};
+      let toggle = false;
+      allDates.forEach(d => {
+        const year = new Date(d).getFullYear();
+        if (!(year in yearColorMap)) {
+          yearColorMap[year] = toggle ? 0.8 : 1.0;
+          console.log("Anno identificato:", year, "→ intensità:", yearColorMap[year]);
+          toggle = !toggle;
+        }
+      });
+      //fine
       const spacing = 50; // aumenta da default (circa 50) a 150 per triplicare la distanza
       const xScale = d3.scalePoint()
         .domain(allDates)
@@ -117,45 +131,30 @@
         cumulativeY += worldBandHeights[world];
       });
 
+      //inizio
+        // Colorazione alternata per anno nelle fasce dei mondi
+        // RETTANGOLI ANNUALI CON COLORE ALTERNATO PER MONDO
+        const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
+        worlds.forEach(world => {
+          allDates.forEach(date => {
+            const year = new Date(date).getFullYear();
+            const x = xScale(date);
+            if (x === undefined) return;
 
-      //INIZIO AGGIUNTA TIMELINE RAGGRUPPATA SUPERIORE - ELIMINARE FINO ALLA FINE PER RIMUOVERE
-      const timeBands = [
-        { start: 1850, end: 1899, label: "1850–1899" },
-        { start: 1900, end: 1949, label: "1900–1949" },
-        { start: 1950, end: 1999, label: "1950–1999" },
-        { start: 2000, end: 2049, label: "2000–2049" },
-        { start: 2050, end: 2100, label: "2050+" }
-      ];
-      const bandGroup = zoomLayer.append("g").attr("class", "top-timebands");
-      // Trova le date esistenti per l’intervallo
-      timeBands.forEach((band, i) => {
-        const matchingDates = allDates.filter(d => {
-          const y = new Date(d).getFullYear();
-          return y >= band.start && y <= band.end;
+            const y = yWorldOffsets[world];
+            const height = worldBandHeights[world];
+            const width = spacing;
+
+            bgBandGroup.append("rect")
+              .attr("x", x - spacing / 2)
+              .attr("y", y)
+              .attr("width", width)
+              .attr("height", height)
+              .attr("fill", d3.color(colorMap[world]).darker(1 - yearColorMap[year]))
+              .attr("opacity", 1); // puoi testare anche 0.8
+          });
         });
-        if (matchingDates.length === 0) return;
-        const x0 = xScale(matchingDates[0]);
-        const x1 = xScale(matchingDates[matchingDates.length - 1]);
-        if (x0 !== undefined && x1 !== undefined) {
-          const width = x1 - x0 + 30;
-          bandGroup.append("rect")
-            .attr("x", x0 - 15)
-            .attr("y", -30) // posizione sopra il grafo
-            .attr("width", width)
-            .attr("height", 30)
-            .attr("fill", "rgba(220,220,220,0.8)")
-            .attr("stroke", "#aaa");
-          bandGroup.append("text")
-            .attr("x", x0 + width / 2)
-            .attr("text-anchor", "middle")
-            .attr("y", -10)
-            .text(band.label)
-            .attr("font-size", "25px")
-            .attr("font-weight", "bold")
-            .attr("fill", "#333");
-        }
-      });
-      //FINE TIMELINE RAGGRUPPATA SUPERIORE
+        //fine
 
       function normalizeWorld(w) {
         if (w.includes("Martha")) return "Martha";
@@ -238,11 +237,13 @@
           .range(worlds.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
 
         zoomLayer.selectAll(".axis-y").remove();
-
+        /*
         zoomLayer.append("g")
           .attr("class", "axis axis-y")
           .attr("transform", `translate(150, 0)`)
           .call(d3.axisLeft(yScaleWorld));
+        */
+
         zoomLayer.selectAll(".node, .link, .world-bg, .world-label").remove(); // mantieni gli assi per renderli persistenti
 
         const nodesToRender = [];
@@ -267,6 +268,7 @@
           }
         });
 
+        /*
         zoomLayer.selectAll(".world-bg")
           .data(worlds).enter()
           .append("rect")
@@ -276,17 +278,21 @@
           .attr("width", 200 + spacing * (allDates.length - 1))
           .attr("height", d => worldBandHeights[d])
           .attr("fill", d => colorMap[d]);
+          */
 
         zoomLayer.selectAll(".world-label")
-          .data(worlds).enter()
-          .append("text")
-          .attr("class", "world-label")
-          .attr("x", 10)
-          .attr("y", d => yWorldOffsets[d] + worldBandHeights[d] / 2)
-          .attr("dy", "0.35em")
-          .attr("text-anchor", "start")
-          .attr("transform", d => `rotate(-90, 10, ${yWorldOffsets[d] + worldBandHeights[d] / 2})`)
-          .text(d => d)
+        .data(worlds).enter()
+        .append("text")
+        .attr("class", "world-label")
+        .attr("text-anchor", "middle")
+        .attr("transform", d => {
+          const y = yWorldOffsets[d] + worldBandHeights[d] / 2;
+          const x = 170; // puoi ridurre a 160, 150 ecc. per avvicinare ancora
+          return `translate(${x},${y}) rotate(-90)`;
+        })
+        .text(d => d)
+        .style("font-size", "24px")
+        .style("fill", "#333");
 
         const idToNode = Object.fromEntries(nodesToRender.map(n => [n.id, n]));
 
