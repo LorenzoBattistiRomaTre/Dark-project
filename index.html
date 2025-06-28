@@ -371,8 +371,12 @@ const edgesToRender = data.edges.map(e => {
 
           .attr("stroke-dasharray", d => d.type === "dashed arrow" ? "5,5" : null)
           .on("mouseover", function(event, d) {
-            d3.select(this).classed("highlighted", true).attr("marker-end", "url(#arrow-red)");
-            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", true);
+            d3.select(this)
+              .classed("highlighted", true)
+              .style("stroke-width", "4px");  // Aumenta spessore al passaggio
+            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
+              .classed("highlighted", true);
+
             tooltip.style("display", "block")
               .html(`<strong>${d.type || 'Arco'}</strong><br><em>Sorgente:</em> ${d.source}<br><em>Destinazione:</em> ${d.target}`);
           })
@@ -380,12 +384,16 @@ const edgesToRender = data.edges.map(e => {
             tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
           })
           .on("mouseout", function(event, d) {
-            d3.select(this).classed("highlighted", false).attr("marker-end", "url(#arrow)");
-            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`).classed("highlighted", false);
+            d3.select(this)
+              .classed("highlighted", false)
+              .style("stroke-width", null);  // ✅ Torna al valore definito in CSS o style iniziale
+            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
+              .classed("highlighted", false);
+
             tooltip.style("display", "none");
           });
 
-          zoomLayer.selectAll(".node")
+      zoomLayer.selectAll(".node")
       .data(nodesToRender).enter()
       .append(d => {
         const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));

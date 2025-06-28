@@ -20,8 +20,7 @@
       stroke-width: 1px;
     }
     .node.highlighted {
-      stroke: red !important;
-      stroke-width: 2px !important;
+      stroke-width: 4px !important;
     }
     .node.red { fill: red !important; }
     .node.green { fill: green !important; }
@@ -31,8 +30,7 @@
       stroke-opacity: 0.8;
     }
     .link.highlighted {
-      stroke: red !important;
-      stroke-width: 2px !important;
+      stroke-width: 4px !important;
     }
     .link.green {
       stroke: green !important;
