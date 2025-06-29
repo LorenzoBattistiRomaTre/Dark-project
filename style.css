@@ -86,62 +86,58 @@
 #filter-panel {
   position: fixed;
   left: 0;
-  top: 0;
-  height: 100vh;
+  top: 68px; /* si posiziona sotto i bottoni */
+  height: calc(100vh - 60px);
   width: 260px;
-  background: #eee;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 4px 0 15px rgba(0,0,0,0.25);
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
   transition: transform 0.3s ease;
   transform: translateX(-100%);
   z-index: 1000;
   padding: 20px;
-  overflow-y: auto; /* ✅ fa scroll se il contenuto è più alto del pannello */
+  overflow-y: auto;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
 }
-
 #filter-panel.open {
   transform: translateX(0);
 }
 
-#filter-controls select {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-
-#filter-controls {
-  margin-top: 50px;
-}
 #top-buttons {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 10px;
   align-items: center;
   position: fixed;
-  top: 10px;
-  left: 10px;
+  top: 0px;
+  left: 0px;
+  width: 280px; /* larghezza uguale al pannello filtri */
   background: white;
-  border-radius: 6px;
+  border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 1101; /* 👈 SUPERIORE al pannello filtri */
+  z-index: 1101;
+  justify-content: center;
 }
-
 
 #top-buttons button {
+  flex: 1 1 70px;
   font-size: 14px;
   padding: 6px 10px;
+  cursor: pointer;
+  background: linear-gradient(to bottom, #555, #333);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background 0.2s;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+
 }
 
-/* Contenitore wrapper intorno a SVG e bottoni */
-#main-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  transition: margin-left 0.3s ease;
-}
-
-/* Quando il pannello è aperto, sposta il contenuto a destra di 260px */
-#filter-panel.open + #main-content {
-  margin-left: 260px;
+#top-buttons button:hover {
+    background: linear-gradient(to bottom, #666, #444);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }

@@ -262,7 +262,8 @@
       }
 
       const groups = groupNodes();
-
+        groups.forEach(g => g.exploded = false); // <- aggiungi qui
+        render();
       function yOffsetScale(node) {
   const world = normalizeWorld(node.world);
   const bandTop = yWorldOffsets[world];
@@ -567,7 +568,7 @@ const edgesToRender = data.edges.map(e => {
         const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));
         if (isTrigger) {
           const baseSize = d.isGroup ? 6 + Math.sqrt(d.size) * 2 : 6;
-          const size = baseSize * 1.5;
+          const size = baseSize * 2.5;
           const height = size * Math.sqrt(3) / 2;
           return `M 0 ${-height/2} L ${-size/2} ${height/2} L ${size/2} ${height/2} Z`;
         }
