@@ -7,6 +7,55 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<!-- BOTTONE FUORI dal pannello -->
+<button id="toggle-filter-btn">☰ Filtri</button>
+
+<!-- PANNELLO -->
+<div id="filter-panel">
+  <div id="filter-controls">
+    <h3>Filtri</h3>
+    <label><input type="checkbox" value="Jonas" class="world-filter" checked> Jonas</label><br>
+    <label><input type="checkbox" value="Martha" class="world-filter" checked> Martha</label><br>
+    <label><input type="checkbox" value="Origin" class="world-filter" checked> Origin</label><br>
+    <hr>
+    <label><input type="checkbox" id="filter-death"> Solo morti</label><br>
+    <label><input type="checkbox" id="filter-trigger"> Solo eventi chiave</label>
+    <hr>
+    <label for="character-select">Personaggi:</label><br>
+      <select id="character-select" multiple size="6" style="height: auto;"></select>
+    <label>
+      <input type="radio" name="char-mode" value="or" checked> uno qualsiasi (OR)
+    </label>
+    <label>
+      <input type="radio" name="char-mode" value="and"> tutti (AND)
+    </label>
+
+    </select>
+    <hr>
+    <label for="year-start">Da anno:</label>
+    <input type="number" id="year-start" min="1888" max="2053" style="width: 70px;" />
+    <br>
+    <label for="year-end">A anno:</label>
+    <input type="number" id="year-end" min="1888" max="2053" style="width: 70px;" />
+  </div>
+  <hr>
+<div>
+  <strong>Tipi di archi:</strong><br>
+  <label><input type="checkbox" class="edge-type-filter" value="Normal" checked> Normal</label><br>
+  <label><input type="checkbox" class="edge-type-filter" value="World Swap" checked> World Swap</label><br>
+  <label><input type="checkbox" class="edge-type-filter" value="Succesfull Time Travel" checked> Successo viaggio</label><br>
+  <label><input type="checkbox" class="edge-type-filter" value="Quantum Entanglement (Causality Break)" checked> Entanglement</label><br>
+  <label><input type="checkbox" class="edge-type-filter" value="Failed Time Travel" checked> Fallimento viaggio</label><br>
+  <label><input type="checkbox" class="edge-type-filter" value="dashed arrow" checked> Dashed</label><br>
+  <label><input type="checkbox" class="edge-type-filter" value="Same Event" checked> Evento condiviso</label>
+</div>
+
+
+</div>
+
+
+
   <button id="resetView">Reset Vista Compatta</button>
   <svg></svg>
   <div class="tooltip" style="display: none;"></div>
@@ -22,9 +71,12 @@
     <div id="panel-content"></div>
   </div>
 
-
-
   <script>
+    document.getElementById("toggle-filter-btn").addEventListener("click", () => {
+      const panel = document.getElementById("filter-panel");
+      panel.classList.toggle("open");
+    });
+
     const svg = d3.select("svg");
     const tooltip = d3.select(".tooltip");
     const width = window.innerWidth;
@@ -80,8 +132,24 @@
         if (parsed) d.date = toISODate(parsed);
         nodeMap[d.id] = d;
       });
-      const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
 
+      const allCharacters = new Set();
+      data.nodes.forEach(n => {
+        if (Array.isArray(n.characters)) {
+          n.characters.forEach(c => allCharacters.add(c));
+        }
+      });
+
+      const characterSelect = document.getElementById("character-select");
+      Array.from(allCharacters).sort().forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        characterSelect.appendChild(option);
+      });
+
+      const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
+      
       //inizio modifica
       // Mappa per alternare sfumature di colore per anno
       const yearColorMap = {};
@@ -157,10 +225,12 @@
         //fine
 
       function normalizeWorld(w) {
-        if (w.includes("Martha")) return "Martha";
-        if (w.includes("Jonas")) return "Jonas";
+        if (!w) return "Origin";
+        if (w.toLowerCase().includes("martha")) return "Martha";
+        if (w.toLowerCase().includes("jonas")) return "Jonas";
         return "Origin";
       }
+
 
       function groupNodes() {
         const groups = [], visited = new Set();
@@ -220,6 +290,102 @@
   return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
       }
 
+
+function applyFilters() {
+  const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked")).map(cb => cb.value);
+  const filterDeath = document.getElementById("filter-death").checked;
+  const filterTrigger = document.getElementById("filter-trigger").checked;
+  const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
+  const charMode = document.querySelector("input[name='char-mode']:checked")?.value || "or";
+
+  const yearStart = parseInt(document.getElementById("year-start").value);
+  const yearEnd = parseInt(document.getElementById("year-end").value);
+  const selectedEdgeTypes = Array.from(document.querySelectorAll(".edge-type-filter:checked")).map(cb => cb.value);
+
+  const nodesToRender = [];
+
+  // 1. Trova tutti i nodi connessi da archi di tipo selezionato
+  const connectedNodeIds = new Set();
+  data.edges.forEach(e => {
+    const type = e.type || "Normal";
+    if (selectedEdgeTypes.includes(type)) {
+      connectedNodeIds.add(e.source);
+      connectedNodeIds.add(e.target);
+    }
+  });
+
+  groups.forEach(g => {
+    const nodeWorlds = g.ids.map(id => normalizeWorld(nodeMap[id].world));
+    const allInSelectedWorlds = nodeWorlds.every(w => selectedWorlds.includes(w));
+    if (!allInSelectedWorlds) return;
+
+    const hasDeath = g.ids.some(id => nodeMap[id]?.death);
+    const hasTrigger = g.ids.some(id => nodeMap[id]?.important_trigger);
+
+    const inCharacterFilter = selectedCharacters.length === 0 || g.ids.some(id => {
+      const chars = nodeMap[id]?.characters;
+      if (!Array.isArray(chars)) return false;
+      if (charMode === "or") {
+        return selectedCharacters.some(c => chars.includes(c));
+      } else {
+        return selectedCharacters.every(c => chars.includes(c));
+      }
+    });
+
+
+    const inTimeRange = g.ids.some(id => {
+      const date = new Date(nodeMap[id].date);
+      const y = date.getFullYear();
+      return (!yearStart || y >= yearStart) && (!yearEnd || y <= yearEnd);
+    });
+
+    const connectedToEdge = g.ids.some(id => connectedNodeIds.has(id));
+    if (!connectedToEdge) return;
+
+    if (!inCharacterFilter || !inTimeRange) return;
+    if (filterDeath && !hasDeath) return;
+    if (filterTrigger && !hasTrigger) return;
+
+    if (g.exploded) {
+      g.ids.forEach(id => {
+        const node = nodeMap[id];
+        const world = normalizeWorld(node.world);
+        const y = new Date(node.date).getFullYear();
+        if (!selectedWorlds.includes(world)) return;
+        if (!connectedNodeIds.has(id)) return;
+        if (filterDeath && !node.death) return;
+        if (filterTrigger && !node.important_trigger) return;
+        if (selectedCharacters.length > 0) {
+        if (!Array.isArray(node.characters)) return;
+            const hasChars = charMode === "or"
+              ? selectedCharacters.some(c => node.characters.includes(c))
+              : selectedCharacters.every(c => node.characters.includes(c));
+            if (!hasChars) return;
+          }
+        if ((yearStart && y < yearStart) || (yearEnd && y > yearEnd)) return;
+        nodesToRender.push(node);
+      });
+    } else {
+      const rep = g.representative;
+      nodesToRender.push({
+        id: g.ids.join(","),
+        label: g.ids.length === 1 ? rep.label : g.ids.length + " eventi",
+        date: rep.date,
+        world: normalizeWorld(rep.world),
+        isGroup: g.ids.length > 1,
+        group: g,
+        size: g.ids.length,
+        characters: rep.characters
+      });
+    }
+  });
+
+  return nodesToRender;
+}
+
+
+
+
       function render() {
         // Ripristina assi
         zoomLayer.append("g")
@@ -246,27 +412,7 @@
 
         zoomLayer.selectAll(".node, .link, .world-bg, .world-label").remove(); // mantieni gli assi per renderli persistenti
 
-        const nodesToRender = [];
-        groups.forEach(g => {
-          if (g.exploded) {
-            g.ids.forEach(id => nodesToRender.push(nodeMap[id]));
-          } else {
-            const rep = g.representative;
-            const label = g.ids.length === 1 ? rep.label : g.ids.length + " eventi";
-            const characters = g.ids.length === 1 ? rep.characters : [];
-
-            nodesToRender.push({
-              id: g.ids.join(","),
-              label,
-              date: rep.date,
-              world: normalizeWorld(rep.world),
-              isGroup: g.ids.length > 1,
-              group: g,
-              size: g.ids.length,
-              characters: g.ids.length === 1 ? rep.characters : []
-            });
-          }
-        });
+       const nodesToRender = applyFilters();
 
         /*
         zoomLayer.selectAll(".world-bg")
@@ -315,11 +461,19 @@ nodesToRender.forEach(d => {
   };
 });
 
+const visibleNodeIds = new Set(nodesToRender.map(n => n.id));
+const selectedEdgeTypes = Array.from(document.querySelectorAll(".edge-type-filter:checked")).map(cb => cb.value);
 const edgesToRender = data.edges.map(e => {
   const sourceGroup = groups.find(g => g.ids.includes(e.source));
   const targetGroup = groups.find(g => g.ids.includes(e.target));
+
   const source = sourceGroup.exploded ? e.source : sourceGroup.ids.join(",");
   const target = targetGroup.exploded ? e.target : targetGroup.ids.join(",");
+
+  if (!visibleNodeIds.has(source) || !visibleNodeIds.has(target)) return null;
+
+  const edgeType = e.type || "__other__";
+  if (!selectedEdgeTypes.includes(edgeType)) return null;
 
   const dx = positionMap[target].x - positionMap[source].x;
   const dy = positionMap[target].y - positionMap[source].y;
@@ -334,6 +488,7 @@ const edgesToRender = data.edges.map(e => {
 
   return {
     ...e,
+    type: edgeType,
     source,
     target,
     x1,
@@ -341,7 +496,8 @@ const edgesToRender = data.edges.map(e => {
     x2,
     y2
   };
-});
+}).filter(d => d !== null);
+
 
         zoomLayer.selectAll(".link")
           .data(edgesToRender).enter()
@@ -480,16 +636,23 @@ const edgesToRender = data.edges.map(e => {
           document.getElementById("side-panel").classList.add("open");
         }
 
-
-
         d3.select("#resetView").on("click", () => {
           groups.forEach(g => g.exploded = false);
+          
           render();
         });
       }
+            document.querySelectorAll(".world-filter, #filter-death, #filter-trigger")
+        .forEach(el => el.addEventListener("change", render));
+        document.getElementById("character-select").addEventListener("change", render);
+        document.getElementById("year-start").addEventListener("input", render);
+        document.getElementById("year-end").addEventListener("input", render);
+        document.querySelectorAll(".edge-type-filter").forEach(cb => {cb.addEventListener("change", render);});
+
 
       render();
     });
   </script>
 </body>
 </html>
+
