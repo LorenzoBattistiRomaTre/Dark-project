@@ -22,7 +22,7 @@
     .node.highlighted {
       stroke-width: 4px !important;
     }
-    .node.red { fill: red !important; }
+    .node.orange { fill: orange !important; }
     .node.green { fill: green !important; }
     .node.purple { fill: purple !important; }
     .link {

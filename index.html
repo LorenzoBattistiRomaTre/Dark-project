@@ -30,8 +30,11 @@
     <label><input type="checkbox" id="filter-death"> Solo morti</label><br>
     <label><input type="checkbox" id="filter-trigger"> Solo eventi chiave</label>
     <hr>
-    <label for="character-select">Personaggi:</label><br>
-      <select id="character-select" multiple size="6" style="height: auto;"></select>
+    <label>Personaggi:</label><br>
+    <div id="selected-characters" style="margin-bottom: 10px;"></div>
+    <input type="text" id="character-search" placeholder="Cerca personaggio..." style="width: 100%; padding: 5px; margin-bottom: 10px;">
+    <div id="search-suggestions" style="border: 1px solid #ccc; max-height: 100px; overflow-y: auto; display: none;"></div>
+
     <label>
       <input type="radio" name="char-mode" value="or" checked> uno qualsiasi (OR)
     </label>
@@ -144,13 +147,66 @@
           n.characters.forEach(c => allCharacters.add(c));
         }
       });
-
-      const characterSelect = document.getElementById("character-select");
+      
+      //MODIFICA
+      /*const characterSelect = document.getElementById("character-select");
       Array.from(allCharacters).sort().forEach(name => {
         const option = document.createElement("option");
         option.value = name;
         option.textContent = name;
         characterSelect.appendChild(option);
+      });*/
+      const selectedCharactersContainer = document.getElementById("selected-characters");
+      const characterSearchInput = document.getElementById("character-search");
+      const searchSuggestions = document.getElementById("search-suggestions");
+
+      let selectedCharacters = [];
+
+      function updateSelectedCharacters() {
+        selectedCharactersContainer.innerHTML = "";
+        selectedCharacters.forEach(name => {
+          const tag = document.createElement("span");
+          tag.style.cssText = "display: inline-block; background: #eee; border: 1px solid #ccc; border-radius: 12px; padding: 2px 8px; margin: 2px; font-size: 12px;";
+          tag.textContent = name;
+
+          const removeBtn = document.createElement("span");
+          removeBtn.textContent = " ✕";
+          removeBtn.style.cssText = "cursor: pointer; color: red; margin-left: 4px;";
+          removeBtn.onclick = () => {
+            selectedCharacters = selectedCharacters.filter(c => c !== name);
+            render();
+            updateSelectedCharacters();
+          };
+
+          tag.appendChild(removeBtn);
+          selectedCharactersContainer.appendChild(tag);
+        });
+        render();
+      }
+
+      characterSearchInput.addEventListener("input", () => {
+        const query = characterSearchInput.value.toLowerCase();
+        const suggestions = Array.from(allCharacters).filter(c => c.toLowerCase().includes(query) && !selectedCharacters.includes(c));
+
+        searchSuggestions.innerHTML = "";
+        if (suggestions.length === 0 || query === "") {
+          searchSuggestions.style.display = "none";
+          return;
+        }
+
+        suggestions.forEach(name => {
+          const div = document.createElement("div");
+          div.textContent = name;
+          div.style.cssText = "padding: 4px; cursor: pointer;";
+          div.onclick = () => {
+            selectedCharacters.push(name);
+            characterSearchInput.value = "";
+            searchSuggestions.style.display = "none";
+            updateSelectedCharacters();
+          };
+          searchSuggestions.appendChild(div);
+        });
+        searchSuggestions.style.display = "block";
       });
 
       const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
@@ -301,7 +357,7 @@ function applyFilters() {
   const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked")).map(cb => cb.value);
   const filterDeath = document.getElementById("filter-death").checked;
   const filterTrigger = document.getElementById("filter-trigger").checked;
-  const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
+ // const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
   const charMode = document.querySelector("input[name='char-mode']:checked")?.value || "or";
 
   const yearStart = parseInt(document.getElementById("year-start").value);
@@ -588,7 +644,7 @@ const edgesToRender = data.edges.map(e => {
         const idList = d.group ? d.group.ids : [d.id];
         const incoming = data.edges.filter(e => idList.includes(e.target));
         const outgoing = data.edges.filter(e => idList.includes(e.source));
-        d3.select(`[data-id='${d.id}']`).classed("red", true);
+        d3.select(`[data-id='${d.id}']`).classed("orange", true);
         incoming.forEach(e => {
           d3.select(`.link-${e.id}`).classed("purple", true).attr("marker-end", "url(#arrow-purple)");
           d3.select(`[data-id='${e.source}']`).classed("purple", true);
@@ -603,7 +659,7 @@ const edgesToRender = data.edges.map(e => {
       })
       .on("mouseout", () => {
         tooltip.style("display", "none");
-        d3.selectAll(".node").classed("red green purple", false);
+        d3.selectAll(".node").classed("orange green purple", false);
         d3.selectAll(".link").classed("green", false).classed("purple", false).attr("marker-end", "url(#arrow)");
       })
       .on("click", (event, d) => {
