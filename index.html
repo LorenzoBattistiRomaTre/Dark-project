@@ -8,8 +8,16 @@
 </head>
 <body>
 
-<!-- BOTTONE FUORI dal pannello -->
-<button id="toggle-filter-btn">☰ Filtri</button>
+<div id="main-content">
+    <div id="top-buttons">
+      <button id="toggle-filter-btn">☰ Filtri</button>
+      <button id="expandAll">Espandi Tutto</button>
+      <button id="resetView">Vista Compatta</button>
+    </div>
+    <svg></svg>
+    <div class="tooltip"></div>
+
+  </div>
 
 <!-- PANNELLO -->
 <div id="filter-panel">
@@ -54,9 +62,6 @@
 
 </div>
 
-
-
-  <button id="resetView">Reset Vista Compatta</button>
   <svg></svg>
   <div class="tooltip" style="display: none;"></div>
   <div id="side-panel">
@@ -638,9 +643,14 @@ const edgesToRender = data.edges.map(e => {
 
         d3.select("#resetView").on("click", () => {
           groups.forEach(g => g.exploded = false);
-          
           render();
         });
+
+        d3.select("#expandAll").on("click", () => {
+          groups.forEach(g => g.exploded = true);
+          render();
+         });
+
       }
             document.querySelectorAll(".world-filter, #filter-death, #filter-trigger")
         .forEach(el => el.addEventListener("change", render));

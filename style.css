@@ -60,12 +60,7 @@
     .axis path {
       stroke: #444;
     }
-    #resetView {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-    }
+
     #side-panel {
         position: fixed;
         right: 0;
@@ -113,20 +108,40 @@
 }
 
 
-#toggle-filter-btn {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1100;
-  background: #333;
-  color: #fff;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
 #filter-controls {
   margin-top: 50px;
 }
+#top-buttons {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  align-items: center;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1101; /* 👈 SUPERIORE al pannello filtri */
+}
 
+
+#top-buttons button {
+  font-size: 14px;
+  padding: 6px 10px;
+}
+
+/* Contenitore wrapper intorno a SVG e bottoni */
+#main-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: margin-left 0.3s ease;
+}
+
+/* Quando il pannello è aperto, sposta il contenuto a destra di 260px */
+#filter-panel.open + #main-content {
+  margin-left: 260px;
+}
