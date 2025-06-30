@@ -219,7 +219,7 @@
         }
       });
       
-      const spacing = 50; // aumenta da default (circa 50) a 150 per triplicare la distanza
+      const spacing = 75; // aumenta da default (circa 50) a 150 per triplicare la distanza
       
         // Colorazione alternata per anno, bande verticali
         zoomLayer.selectAll(".year-colored-bands").remove();
@@ -260,7 +260,6 @@
         groups.forEach(g => g.exploded = false); // <- aggiungi qui
         render();
 
-
 function applyFilters() {
   const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked")).map(cb => cb.value);
   const filterDeath = document.getElementById("filter-death").checked;
@@ -274,7 +273,7 @@ function applyFilters() {
 
   const nodesToRender = [];
 
-  // 1. Trova tutti i nodi connessi da archi di tipo selezionato
+  //Trova tutti i nodi connessi da archi di tipo selezionato
   const connectedNodeIds = new Set();
   data.edges.forEach(e => {
     const type = e.type || "Normal";
@@ -362,13 +361,12 @@ function applyFilters() {
           return (!yearStart || y >= yearStart) && (!yearEnd || y <= yearEnd);
         });
 
-
         const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked"))
                                     .map(cb => cb.value);
         
         const worldsToShow = worlds.filter(w => selectedWorlds.includes(w));
 
-        // 📐 Costruzione mappa Y
+        //Costruzione mappa Y
         const yOffsets = {};
         worldsToShow.forEach(w => yOffsets[w] = {});
         data.nodes.forEach(node => {
@@ -378,8 +376,7 @@ function applyFilters() {
         yOffsets[world][node.date].push(node.id);
       });
 
-
-        const minNodeSpacing = 22;
+        const minNodeSpacing = 50;
         const worldMaxCounts = {};
         worldsToShow.forEach(world => {
           worldMaxCounts[world] = d3.max(Object.values(yOffsets[world]), arr => arr.length) || 1;
@@ -439,7 +436,7 @@ function applyFilters() {
           .domain(filteredDates)
           .range([200, 200 + spacing * (filteredDates.length - 1)])
           .padding(1.0);
-        // Rimuovi eventuali vecchie bande
+        // Rimuove eventuali vecchie bande
         zoomLayer.selectAll(".axis").remove();
         zoomLayer.selectAll(".year-colored-bands").remove();
         const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
@@ -460,7 +457,6 @@ function applyFilters() {
           });
         });
 
-
         zoomLayer.append("g")
           .attr("class", "axis")
           .attr("transform", `translate(0, ${height - 10})`)
@@ -469,7 +465,8 @@ function applyFilters() {
           .attr("text-anchor", "end")
           .attr("transform", "rotate(-45)")
           .attr("dx", "-0.5em")
-          .attr("dy", "0.25em");
+          .attr("dy", "0.25em")
+          .style("font-size", "40px");
 
         const yScaleWorld = d3.scalePoint()
           .domain(worldsToShow)
@@ -477,12 +474,9 @@ function applyFilters() {
 
         zoomLayer.selectAll(".axis-y").remove();
     
-
         zoomLayer.selectAll(".node, .link, .world-bg, .world-label").remove(); // mantieni gli assi per renderli persistenti
       
-       const nodesToRender = applyFilters();
-
-    
+        const nodesToRender = applyFilters();
 
         zoomLayer.selectAll(".world-label")
         .data(worlds).enter()
@@ -495,7 +489,7 @@ function applyFilters() {
           return `translate(${x},${y}) rotate(-90)`;
         })
         .text(d => d)
-        .style("font-size", "24px")
+        .style("font-size", "80px")
         .style("fill", "#333");
 
         const idToNode = Object.fromEntries(nodesToRender.map(n => [n.id, n]));
@@ -544,7 +538,6 @@ const edgesToRender = data.edges.map(e => {
   const x2 = positionMap[target].x - dx * ratio;
   const y2 = positionMap[target].y - dy * ratio;
 
-  //prova qui
   const sourceNode = nodeMap[e.source];
   const targetNode = nodeMap[e.target];
   const sameDate = sourceNode?.date === targetNode?.date;
@@ -556,7 +549,6 @@ const edgesToRender = data.edges.map(e => {
   if (curved) {
     curveDirection = positionMap[e.source].y < positionMap[e.target].y ? "clockwise" : "counterclockwise";
   }
-  //fine prova
 
   return {
     ...e,
@@ -572,7 +564,6 @@ const edgesToRender = data.edges.map(e => {
   };
 }).filter(d => d !== null);
 
-      //inizio prova
   zoomLayer.selectAll(".link")
   .data(edgesToRender).enter()
   .append("path") // <-- CAMBIATO da line a path
@@ -638,10 +629,6 @@ const edgesToRender = data.edges.map(e => {
 
     tooltip.style("display", "none");
   });
-
-
-      //fine prova
-
       zoomLayer.selectAll(".node")
       .data(nodesToRender).enter()
       .append(d => {
