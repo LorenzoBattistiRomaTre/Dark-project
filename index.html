@@ -544,6 +544,20 @@ const edgesToRender = data.edges.map(e => {
   const x2 = positionMap[target].x - dx * ratio;
   const y2 = positionMap[target].y - dy * ratio;
 
+  //prova qui
+  const sourceNode = nodeMap[e.source];
+  const targetNode = nodeMap[e.target];
+  const sameDate = sourceNode?.date === targetNode?.date;
+  const sameWorld = normalizeWorld(sourceNode?.world) === normalizeWorld(targetNode?.world);
+  const eventCount = yOffsets[normalizeWorld(sourceNode?.world)]?.[sourceNode?.date]?.length || 0;
+  const curved = sameDate && sameWorld && eventCount > 5;
+
+  let curveDirection = null;
+  if (curved) {
+    curveDirection = positionMap[e.source].y < positionMap[e.target].y ? "clockwise" : "counterclockwise";
+  }
+  //fine prova
+
   return {
     ...e,
     type: edgeType,
@@ -552,71 +566,81 @@ const edgesToRender = data.edges.map(e => {
     x1,
     y1,
     x2,
-    y2
+    y2,
+    curved,
+    curveDirection
   };
 }).filter(d => d !== null);
 
-        zoomLayer.selectAll(".link")
-          .data(edgesToRender).enter()
-          .append("line")
-          .attr("class", d => `link link-${d.id}`)
-          .attr("x1", d => d.x1)
-          .attr("y1", d => d.y1)
-          .attr("x2", d => d.x2)
-          .attr("y2", d => d.y2)
-          //.attr("marker-end", "url(#arrow)")
-          //modifica colore marker end per tipi specifici
-          .attr("marker-end", d => {
-              if (d.type === "Succesfull Time Travel") return "url(#arrow-blue)";
-              if (d.type === "Failed Time Travel") return "url(#arrow-orange)";
-              if (d.type === "World Swap") return "url(#arrow-pink)";
-              return "url(#arrow)";
-          })
-          //modifica colore linea per Successful Time Travel
-          .style("stroke", d => {
-            if (d.type === "Succesfull Time Travel") return "#6495ED";
-            if (d.type === "Failed Time Travel") return "#FF6A00";
-            if (d.type === "World Swap") return "hotpink";
-            return "#999"
-          })
+      //inizio prova
+  zoomLayer.selectAll(".link")
+  .data(edgesToRender).enter()
+  .append("path") // <-- CAMBIATO da line a path
+  .attr("class", d => `link link-${d.id}`)
+  .attr("d", d => {
+  if (d.curved && d.curveDirection) {
+    const dx = d.x2 - d.x1;
+    const dy = d.y2 - d.y1;
+    const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
+    const sweepFlag = d.y2 > d.y1 ? 1 : 0;
+    return `M${d.x1},${d.y1} A${dr},${dr} 0 0,${sweepFlag} ${d.x2},${d.y2}`;
+  } else {
+    return `M${d.x1},${d.y1} L${d.x2},${d.y2}`;
+  }
+})
 
-          .attr("stroke-dasharray", d => d.type === "dashed arrow" ? "5,5" : null)
-          .on("mouseover", function(event, d) {
-          d3.select(this)
-            .classed("highlighted", true)
-            .style("stroke-width", "4px");
-          d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-            .classed("highlighted", true);
+  .attr("fill", "none")
+  .attr("marker-end", d => {
+    if (d.type === "Succesfull Time Travel") return "url(#arrow-blue)";
+    if (d.type === "Failed Time Travel") return "url(#arrow-orange)";
+    if (d.type === "World Swap") return "url(#arrow-pink)";
+    return "url(#arrow)";
+  })
+  .style("stroke", d => {
+    if (d.type === "Succesfull Time Travel") return "#6495ED";
+    if (d.type === "Failed Time Travel") return "#FF6A00";
+    if (d.type === "World Swap") return "hotpink";
+    return "#999";
+  })
+  .attr("stroke-dasharray", d => d.type === "dashed arrow" ? "5,5" : null)
+  .on("mouseover", function(event, d) {
+    d3.select(this)
+      .classed("highlighted", true)
+      .style("stroke-width", "4px");
+    d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
+      .classed("highlighted", true);
 
-          const getNodeInfo = (id) => {
-            const node = idToNode[id];
-            if (!node) return "(nodo sconosciuto)";
-            const date = node.date || "data sconosciuta";
-            const isSuperNode = node.isGroup;
-            const label = node.label || "";
-            return isSuperNode ? `Data: ${date}` : `Data: ${date}<br>Evento: ${label}`;
-          };
+    const getNodeInfo = (id) => {
+      const node = idToNode[id];
+      if (!node) return "(nodo sconosciuto)";
+      const date = node.date || "data sconosciuta";
+      const isSuperNode = node.isGroup;
+      const label = node.label || "";
+      return isSuperNode ? `Data: ${date}` : `Data: ${date}<br>Evento: ${label}`;
+    };
 
-          tooltip.style("display", "block")
-            .html(`
-              <strong>${d.type || 'Arco'}</strong><br>
-              <em>Sorgente:</em><br>${getNodeInfo(d.source)}<br>
-              <em>Destinazione:</em><br>${getNodeInfo(d.target)}
-            `);
-        })
+    tooltip.style("display", "block")
+      .html(`
+        <strong>${d.type || 'Arco'}</strong><br>
+        <em>Sorgente:</em><br>${getNodeInfo(d.source)}<br>
+        <em>Destinazione:</em><br>${getNodeInfo(d.target)}
+      `);
+  })
+  .on("mousemove", event => {
+    tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
+  })
+  .on("mouseout", function(event, d) {
+    d3.select(this)
+      .classed("highlighted", false)
+      .style("stroke-width", null);
+    d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
+      .classed("highlighted", false);
 
-          .on("mousemove", event => {
-            tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
-          })
-          .on("mouseout", function(event, d) {
-            d3.select(this)
-              .classed("highlighted", false)
-              .style("stroke-width", null);  // Torna al valore definito in CSS o style iniziale
-            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-              .classed("highlighted", false);
+    tooltip.style("display", "none");
+  });
 
-            tooltip.style("display", "none");
-          });
+
+      //fine prova
 
       zoomLayer.selectAll(".node")
       .data(nodesToRender).enter()
