@@ -60,6 +60,12 @@
   <label><input type="checkbox" class="edge-type-filter" value="Failed Time Travel" checked> Fallimento viaggio</label><br>
   <label><input type="checkbox" class="edge-type-filter" value="dashed arrow" checked> Dashed</label><br>
   <label><input type="checkbox" class="edge-type-filter" value="Same Event" checked> Evento condiviso</label>
+
+  <hr>
+<button id="reset-filters-btn" style="width: 100%; padding: 10px; background: #333; color: white; border: none; cursor: pointer;">
+  Resetta filtri
+</button>
+
 </div>
 
 </div>
@@ -385,7 +391,8 @@ function applyFilters() {
           worldBandHeights[world] = Math.max(80, count * minNodeSpacing + 20);
         });
 
-        const height = d3.sum(Object.values(worldBandHeights));
+        const height = Math.max(400, d3.sum(Object.values(worldBandHeights)));
+
         svg.attr("height", height);
 
         const yWorldOffsets = {};
@@ -719,6 +726,28 @@ const edgesToRender = data.edges.map(e => {
         document.getElementById("year-end").addEventListener("input", render);
         document.querySelectorAll(".edge-type-filter").forEach(cb => {cb.addEventListener("change", render);});
 
+      //parte di reset
+      document.getElementById("reset-filters-btn").addEventListener("click", () => {
+        // Reset mondi
+        document.querySelectorAll(".world-filter").forEach(cb => cb.checked = true);
+        // Reset checkboxes
+        document.getElementById("filter-death").checked = false;
+        document.getElementById("filter-trigger").checked = false;
+        // Reset personaggi selezionati
+        selectedTags.clear();
+        document.getElementById("character-tags").innerHTML = "";
+        document.getElementById("character-search").value = "";
+        Array.from(characterSelect.options).forEach(opt => opt.selected = false);
+        // Reset radio (OR mode)
+        document.querySelector("input[name='char-mode'][value='or']").checked = true;
+        // Reset anni
+        document.getElementById("year-start").value = "";
+        document.getElementById("year-end").value = "";
+        // Reset tipi di archi
+        document.querySelectorAll(".edge-type-filter").forEach(cb => cb.checked = true);
+        render(); // rende effettivi i cambiamenti
+      });
+      
       render();
     });
   </script>
