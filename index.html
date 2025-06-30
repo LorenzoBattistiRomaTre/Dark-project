@@ -121,6 +121,8 @@
       .attr("markerWidth", 7)
       .attr("markerHeight", 7)
       .attr("orient", "auto")
+      /*decommenta se vuoi marker delle frecce a dimensione fissa*/
+      /*.attr("markerUnits", "userSpaceOnUse")*/
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", d => d.color);
