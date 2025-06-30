@@ -62,7 +62,6 @@
   <label><input type="checkbox" class="edge-type-filter" value="Same Event" checked> Evento condiviso</label>
 </div>
 
-
 </div>
 
   <svg></svg>
@@ -103,7 +102,6 @@
         { id: "arrow-red", color: "red" },
         { id: "arrow-green", color: "green" },
         { id: "arrow-purple", color: "purple" },
-        
         { id: "arrow-blue", color: "#6495ED" }, //Successful Time Travel
         { id: "arrow-orange", color: "#FF6A00" }, //Failed Time Travel
         { id: "arrow-pink", color: "hotpink" } //World Swap
@@ -121,15 +119,12 @@
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", d => d.color);
 
-
     function closePanel() {
           const panel = document.getElementById("side-panel");
           panel.classList.remove("open");
           document.getElementById("panel-content").innerHTML = "";
     }
     document.getElementById("close-panel-btn").addEventListener("click", closePanel);
-
-
 
     d3.json("dark_graph_data_cleaned.json").then(data => {
       const toISODate = d3.timeFormat("%Y-%m-%d");
@@ -206,7 +201,6 @@
 
       const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
       
-      //inizio modifica
       // Mappa per alternare sfumature di colore per anno
       const yearColorMap = {};
       let toggle = false;
@@ -218,7 +212,7 @@
           toggle = !toggle;
         }
       });
-      //fine
+      
       const spacing = 50; // aumenta da default (circa 50) a 150 per triplicare la distanza
       const xScale = d3.scalePoint()
         .domain(allDates)
@@ -255,9 +249,7 @@
         cumulativeY += worldBandHeights[world];
       });
 
-      //inizio
-        // Colorazione alternata per anno nelle fasce dei mondi
-        // RETTANGOLI ANNUALI CON COLORE ALTERNATO PER MONDO
+        // Colorazione alternata per anno, bande verticali
         const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
         worlds.forEach(world => {
           allDates.forEach(date => {
@@ -278,7 +270,6 @@
               .attr("opacity", 1); // puoi testare anche 0.8
           });
         });
-        //fine
 
       function normalizeWorld(w) {
         if (!w) return "Origin";
@@ -286,7 +277,6 @@
         if (w.toLowerCase().includes("jonas")) return "Jonas";
         return "Origin";
       }
-
 
       function groupNodes() {
         const groups = [], visited = new Set();
@@ -347,7 +337,6 @@
   return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
       }
 
-
 function applyFilters() {
   const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked")).map(cb => cb.value);
   const filterDeath = document.getElementById("filter-death").checked;
@@ -388,7 +377,6 @@ function applyFilters() {
         return selectedCharacters.every(c => chars.includes(c));
       }
     });
-
 
     const inTimeRange = g.ids.some(id => {
       const date = new Date(nodeMap[id].date);
@@ -440,9 +428,6 @@ function applyFilters() {
   return nodesToRender;
 }
 
-
-
-
       function render() {
         // Ripristina assi
         zoomLayer.append("g")
@@ -468,7 +453,7 @@ function applyFilters() {
         */
 
         zoomLayer.selectAll(".node, .link, .world-bg, .world-label").remove(); // mantieni gli assi per renderli persistenti
-
+      
        const nodesToRender = applyFilters();
 
         /*
@@ -555,7 +540,6 @@ const edgesToRender = data.edges.map(e => {
   };
 }).filter(d => d !== null);
 
-
         zoomLayer.selectAll(".link")
           .data(edgesToRender).enter()
           .append("line")
@@ -580,26 +564,38 @@ const edgesToRender = data.edges.map(e => {
             return "#999"
           })
 
-
-
           .attr("stroke-dasharray", d => d.type === "dashed arrow" ? "5,5" : null)
           .on("mouseover", function(event, d) {
-            d3.select(this)
-              .classed("highlighted", true)
-              .style("stroke-width", "4px");  // Aumenta spessore al passaggio
-            d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
-              .classed("highlighted", true);
+          d3.select(this)
+            .classed("highlighted", true)
+            .style("stroke-width", "4px");
+          d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
+            .classed("highlighted", true);
 
-            tooltip.style("display", "block")
-              .html(`<strong>${d.type || 'Arco'}</strong><br><em>Sorgente:</em> ${d.source}<br><em>Destinazione:</em> ${d.target}`);
-          })
+          const getNodeInfo = (id) => {
+            const node = idToNode[id];
+            if (!node) return "(nodo sconosciuto)";
+            const date = node.date || "data sconosciuta";
+            const isSuperNode = node.isGroup;
+            const label = node.label || "";
+            return isSuperNode ? `Data: ${date}` : `Data: ${date}<br>Evento: ${label}`;
+          };
+
+          tooltip.style("display", "block")
+            .html(`
+              <strong>${d.type || 'Arco'}</strong><br>
+              <em>Sorgente:</em><br>${getNodeInfo(d.source)}<br>
+              <em>Destinazione:</em><br>${getNodeInfo(d.target)}
+            `);
+        })
+
           .on("mousemove", event => {
             tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY + "px");
           })
           .on("mouseout", function(event, d) {
             d3.select(this)
               .classed("highlighted", false)
-              .style("stroke-width", null);  // ✅ Torna al valore definito in CSS o style iniziale
+              .style("stroke-width", null);  // Torna al valore definito in CSS o style iniziale
             d3.selectAll(`[data-id='${d.source}'], [data-id='${d.target}']`)
               .classed("highlighted", false);
 
@@ -610,7 +606,7 @@ const edgesToRender = data.edges.map(e => {
       .data(nodesToRender).enter()
       .append(d => {
         const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));
-        return isTrigger ? document.createElementNS(d3.namespaces.svg, "path") : document.createElementNS(d3.namespaces.svg, "circle");
+        return isTrigger ? document.createElementNS(d3.namespaces.svg, "path") : document.createElementNS(d3.namespaces.svg, "circle");  
       })
       .attr("class", "node")
       .attr("data-id", d => d.id)
@@ -635,7 +631,10 @@ const edgesToRender = data.edges.map(e => {
       })
       .on("mouseover", (event, d) => {
         tooltip.style("display", "block")
-          .html(`<strong>${d.label}</strong>`);
+          .html(`
+            <strong>Data:</strong> ${d.date}<br>
+            <strong>Evento:</strong> ${d.label}
+          `);
         const idList = d.group ? d.group.ids : [d.id];
         const incoming = data.edges.filter(e => idList.includes(e.target));
         const outgoing = data.edges.filter(e => idList.includes(e.source));
@@ -710,7 +709,6 @@ const edgesToRender = data.edges.map(e => {
         document.getElementById("year-start").addEventListener("input", render);
         document.getElementById("year-end").addEventListener("input", render);
         document.querySelectorAll(".edge-type-filter").forEach(cb => {cb.addEventListener("change", render);});
-
 
       render();
     });
