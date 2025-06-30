@@ -214,10 +214,8 @@
       });
       
       const spacing = 50; // aumenta da default (circa 50) a 150 per triplicare la distanza
-      const xScale = d3.scalePoint()
-        .domain(allDates)
-        .range([200, 200 + spacing * (allDates.length - 1)])
-        .padding(1.0);
+      
+
 
       const yOffsets = {};
       worlds.forEach(world => yOffsets[world] = {});
@@ -241,6 +239,8 @@
 
       const height = d3.sum(Object.values(worldBandHeights));
       svg.attr("height", height);
+     
+
 
       const yWorldOffsets = {};
       let cumulativeY = 0;
@@ -250,26 +250,8 @@
       });
 
         // Colorazione alternata per anno, bande verticali
+        zoomLayer.selectAll(".year-colored-bands").remove();
         const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
-        worlds.forEach(world => {
-          allDates.forEach(date => {
-            const year = new Date(date).getFullYear();
-            const x = xScale(date);
-            if (x === undefined) return;
-
-            const y = yWorldOffsets[world];
-            const height = worldBandHeights[world];
-            const width = spacing;
-
-            bgBandGroup.append("rect")
-              .attr("x", x - spacing / 2)
-              .attr("y", y)
-              .attr("width", width)
-              .attr("height", height)
-              .attr("fill", d3.color(colorMap[world]).darker(1 - yearColorMap[year]))
-              .attr("opacity", 1); // puoi testare anche 0.8
-          });
-        });
 
       function normalizeWorld(w) {
         if (!w) return "Origin";
@@ -430,6 +412,40 @@ function applyFilters() {
 
       function render() {
         // Ripristina assi
+        const yearStart = parseInt(document.getElementById("year-start").value);
+        const yearEnd = parseInt(document.getElementById("year-end").value);
+
+        const filteredDates = allDates.filter(d => {
+          const y = new Date(d).getFullYear();
+          return (!yearStart || y >= yearStart) && (!yearEnd || y <= yearEnd);
+        });
+
+        const xScale = d3.scalePoint()
+          .domain(filteredDates)
+          .range([200, 200 + spacing * (filteredDates.length - 1)])
+          .padding(1.0);
+        // Rimuovi eventuali vecchie bande
+        zoomLayer.selectAll(".axis").remove();
+        zoomLayer.selectAll(".year-colored-bands").remove();
+        const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
+        filteredDates.forEach(date => {
+          const year = new Date(date).getFullYear();
+          worlds.forEach(world => {
+            const x = xScale(date);
+            if (x === undefined) return;
+            const y = yWorldOffsets[world];
+            const height = worldBandHeights[world];
+            bgBandGroup.append("rect")
+              .attr("x", x - spacing / 2)
+              .attr("y", y)
+              .attr("width", spacing)
+              .attr("height", height)
+              .attr("fill", d3.color(colorMap[world]).darker(1 - yearColorMap[year]))
+              .attr("opacity", 1);
+          });
+        });
+
+
         zoomLayer.append("g")
           .attr("class", "axis")
           .attr("transform", `translate(0, ${height - 10})`)
@@ -445,28 +461,13 @@ function applyFilters() {
           .range(worlds.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
 
         zoomLayer.selectAll(".axis-y").remove();
-        /*
-        zoomLayer.append("g")
-          .attr("class", "axis axis-y")
-          .attr("transform", `translate(150, 0)`)
-          .call(d3.axisLeft(yScaleWorld));
-        */
+    
 
         zoomLayer.selectAll(".node, .link, .world-bg, .world-label").remove(); // mantieni gli assi per renderli persistenti
       
        const nodesToRender = applyFilters();
 
-        /*
-        zoomLayer.selectAll(".world-bg")
-          .data(worlds).enter()
-          .append("rect")
-          .attr("class", "world-bg")
-          .attr("x", 0)
-          .attr("y", d => yWorldOffsets[d])
-          .attr("width", 200 + spacing * (allDates.length - 1))
-          .attr("height", d => worldBandHeights[d])
-          .attr("fill", d => colorMap[d]);
-          */
+    
 
         zoomLayer.selectAll(".world-label")
         .data(worlds).enter()
