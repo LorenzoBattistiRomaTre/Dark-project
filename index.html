@@ -30,10 +30,10 @@
     <label><input type="checkbox" id="filter-death"> Solo morti</label><br>
     <label><input type="checkbox" id="filter-trigger"> Solo eventi chiave</label>
     <hr>
-    <label>Personaggi:</label><br>
-    <div id="selected-characters" style="margin-bottom: 10px;"></div>
-    <input type="text" id="character-search" placeholder="Cerca personaggio..." style="width: 100%; padding: 5px; margin-bottom: 10px;">
-    <div id="search-suggestions" style="border: 1px solid #ccc; max-height: 100px; overflow-y: auto; display: none;"></div>
+  <label for="character-select">Personaggi:</label><br>
+  <input type="text" id="character-search" placeholder="Cerca personaggio..." style="width: 100%; margin: 5px 0;" />
+  <div id="character-tags" style="margin-bottom: 10px;"></div>
+  <select id="character-select" multiple size="6" style="height: auto;"></select>
 
     <label>
       <input type="radio" name="char-mode" value="or" checked> uno qualsiasi (OR)
@@ -147,66 +147,61 @@
           n.characters.forEach(c => allCharacters.add(c));
         }
       });
-      
-      //MODIFICA
-      /*const characterSelect = document.getElementById("character-select");
+
+      const characterSelect = document.getElementById("character-select");
+      const selectedTags = new Set();
+      const searchInput = document.getElementById("character-search");
+      const tagsContainer = document.getElementById("character-tags");
+
+      searchInput.addEventListener("input", () => {
+        const filter = searchInput.value.toLowerCase();
+        Array.from(characterSelect.options).forEach(opt => {
+          opt.style.display = opt.value.toLowerCase().includes(filter) ? "block" : "none";
+        });
+      });
+
+      characterSelect.addEventListener("change", () => {
+        Array.from(characterSelect.selectedOptions).forEach(opt => {
+          if (!selectedTags.has(opt.value)) {
+            selectedTags.add(opt.value);
+            addTag(opt.value);
+          }
+        });
+        characterSelect.selectedIndex = -1;
+        triggerRender();
+      });
+
+      function addTag(name) {
+        const tag = document.createElement("span");
+        tag.textContent = name;
+        tag.style.cssText = "display: inline-block; background: #444; color: white; padding: 4px 8px; border-radius: 12px; margin: 2px; cursor: default;";
+        
+        const remove = document.createElement("span");
+        remove.textContent = " ✖";
+        remove.style.cssText = "margin-left: 5px; cursor: pointer;";
+        
+        remove.addEventListener("click", () => {
+          selectedTags.delete(name);
+          tag.remove();
+          triggerRender();
+        });
+
+        tag.appendChild(remove);
+        tagsContainer.appendChild(tag);
+      }
+
+      function triggerRender() {
+        Array.from(characterSelect.options).forEach(opt => {
+          opt.selected = selectedTags.has(opt.value);
+        });
+        render();
+      }
+
       Array.from(allCharacters).sort().forEach(name => {
         const option = document.createElement("option");
         option.value = name;
         option.textContent = name;
         characterSelect.appendChild(option);
-      });*/
-      const selectedCharactersContainer = document.getElementById("selected-characters");
-      const characterSearchInput = document.getElementById("character-search");
-      const searchSuggestions = document.getElementById("search-suggestions");
-
-      let selectedCharacters = [];
-
-      function updateSelectedCharacters() {
-        selectedCharactersContainer.innerHTML = "";
-        selectedCharacters.forEach(name => {
-          const tag = document.createElement("span");
-          tag.style.cssText = "display: inline-block; background: #eee; border: 1px solid #ccc; border-radius: 12px; padding: 2px 8px; margin: 2px; font-size: 12px;";
-          tag.textContent = name;
-
-          const removeBtn = document.createElement("span");
-          removeBtn.textContent = " ✕";
-          removeBtn.style.cssText = "cursor: pointer; color: red; margin-left: 4px;";
-          removeBtn.onclick = () => {
-            selectedCharacters = selectedCharacters.filter(c => c !== name);
-            render();
-            updateSelectedCharacters();
-          };
-
-          tag.appendChild(removeBtn);
-          selectedCharactersContainer.appendChild(tag);
-        });
-        render();
-      }
-
-      characterSearchInput.addEventListener("input", () => {
-        const query = characterSearchInput.value.toLowerCase();
-        const suggestions = Array.from(allCharacters).filter(c => c.toLowerCase().includes(query) && !selectedCharacters.includes(c));
-
-        searchSuggestions.innerHTML = "";
-        if (suggestions.length === 0 || query === "") {
-          searchSuggestions.style.display = "none";
-          return;
-        }
-
-        suggestions.forEach(name => {
-          const div = document.createElement("div");
-          div.textContent = name;
-          div.style.cssText = "padding: 4px; cursor: pointer;";
-          div.onclick = () => {
-            selectedCharacters.push(name);
-            characterSearchInput.value = "";
-            searchSuggestions.style.display = "none";
-            updateSelectedCharacters();
-          };
-          searchSuggestions.appendChild(div);
-        });
-        searchSuggestions.style.display = "block";
       });
 
       const allDates = [...new Set(data.nodes.map(d => d.date))].sort();
@@ -357,7 +352,7 @@ function applyFilters() {
   const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked")).map(cb => cb.value);
   const filterDeath = document.getElementById("filter-death").checked;
   const filterTrigger = document.getElementById("filter-trigger").checked;
- // const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
+  const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
   const charMode = document.querySelector("input[name='char-mode']:checked")?.value || "or";
 
   const yearStart = parseInt(document.getElementById("year-start").value);
@@ -437,9 +432,7 @@ function applyFilters() {
         isGroup: g.ids.length > 1,
         group: g,
         size: g.ids.length,
-        characters: rep.characters,
-        important_trigger: g.ids.some(id => nodeMap[id]?.important_trigger),
-        death: g.ids.some(id => nodeMap[id]?.death)
+        characters: rep.characters
       });
     }
   });
@@ -724,4 +717,3 @@ const edgesToRender = data.edges.map(e => {
   </script>
 </body>
 </html>
-
