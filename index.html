@@ -215,40 +215,6 @@
       
       const spacing = 50; // aumenta da default (circa 50) a 150 per triplicare la distanza
       
-
-
-      const yOffsets = {};
-      worlds.forEach(world => yOffsets[world] = {});
-      data.nodes.forEach(node => {
-        const world = normalizeWorld(node.world);
-        if (!yOffsets[world][node.date]) yOffsets[world][node.date] = [];
-        yOffsets[world][node.date].push(node.id);
-      });
-
-      const minNodeSpacing = 22;
-      const worldMaxCounts = {};
-      worlds.forEach(world => {
-        worldMaxCounts[world] = d3.max(Object.values(yOffsets[world]), arr => arr.length) || 1;
-      });
-
-      const worldBandHeights = {};
-      worlds.forEach(world => {
-        const count = worldMaxCounts[world];
-        worldBandHeights[world] = Math.max(80, count * minNodeSpacing + 20);
-      });
-
-      const height = d3.sum(Object.values(worldBandHeights));
-      svg.attr("height", height);
-     
-
-
-      const yWorldOffsets = {};
-      let cumulativeY = 0;
-      worlds.forEach(world => {
-        yWorldOffsets[world] = cumulativeY;
-        cumulativeY += worldBandHeights[world];
-      });
-
         // Colorazione alternata per anno, bande verticali
         zoomLayer.selectAll(".year-colored-bands").remove();
         const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
@@ -287,37 +253,7 @@
       const groups = groupNodes();
         groups.forEach(g => g.exploded = false); // <- aggiungi qui
         render();
-      function yOffsetScale(node) {
-  const world = normalizeWorld(node.world);
-  const bandTop = yWorldOffsets[world];
-  const bandHeight = worldBandHeights[world];
-  const bandBottom = bandTop + bandHeight;
 
-  if (node.isGroup && node.group) {
-    const ys = node.group.ids.map(id => {
-      const n = nodeMap[id];
-      const ids = yOffsets[world][n.date] || [n.id];
-      const count = ids.length;
-      const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
-      const index = ids.indexOf(n.id);
-      const totalHeight = (count - 1) * step;
-      const centerY = bandTop + bandHeight / 2;
-      return Math.max(bandTop + 10, Math.min(bandBottom - 10, centerY + index * step - totalHeight / 2));
-    });
-    return d3.mean(ys);
-  }
-
-  const ids = yOffsets[world][node.date] || [node.id];
-  if (!ids.includes(node.id)) ids.push(node.id);
-  const count = ids.length;
-  const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
-  const index = ids.indexOf(node.id);
-  const totalHeight = (count - 1) * step;
-  const centerY = bandTop + bandHeight / 2;
-  const y = centerY + index * step - totalHeight / 2;
-
-  return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
-      }
 
 function applyFilters() {
   const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked")).map(cb => cb.value);
@@ -414,11 +350,83 @@ function applyFilters() {
         // Ripristina assi
         const yearStart = parseInt(document.getElementById("year-start").value);
         const yearEnd = parseInt(document.getElementById("year-end").value);
-
+        
         const filteredDates = allDates.filter(d => {
           const y = new Date(d).getFullYear();
           return (!yearStart || y >= yearStart) && (!yearEnd || y <= yearEnd);
         });
+
+
+        const selectedWorlds = Array.from(document.querySelectorAll(".world-filter:checked"))
+                                    .map(cb => cb.value);
+        
+        const worldsToShow = worlds.filter(w => selectedWorlds.includes(w));
+
+        // 📐 Costruzione mappa Y
+        const yOffsets = {};
+        worldsToShow.forEach(w => yOffsets[w] = {});
+        data.nodes.forEach(node => {
+        const world = normalizeWorld(node.world);
+        if (!yOffsets[world]) return;
+        if (!yOffsets[world][node.date]) yOffsets[world][node.date] = [];
+        yOffsets[world][node.date].push(node.id);
+      });
+
+
+        const minNodeSpacing = 22;
+        const worldMaxCounts = {};
+        worldsToShow.forEach(world => {
+          worldMaxCounts[world] = d3.max(Object.values(yOffsets[world]), arr => arr.length) || 1;
+        });
+
+        const worldBandHeights = {};
+        worldsToShow.forEach(world => {
+          const count = worldMaxCounts[world];
+          worldBandHeights[world] = Math.max(80, count * minNodeSpacing + 20);
+        });
+
+        const height = d3.sum(Object.values(worldBandHeights));
+        svg.attr("height", height);
+
+        const yWorldOffsets = {};
+        let cumulativeY = 0;
+        worldsToShow.forEach(world => {
+          yWorldOffsets[world] = cumulativeY;
+          cumulativeY += worldBandHeights[world];
+        });
+
+      function yOffsetScale(node) {
+        const world = normalizeWorld(node.world);
+        const bandTop = yWorldOffsets[world];
+        const bandHeight = worldBandHeights[world];
+        const bandBottom = bandTop + bandHeight;
+
+        if (node.isGroup && node.group) {
+          const ys = node.group.ids.map(id => {
+            const n = nodeMap[id];
+            const ids = yOffsets[world]?.[n.date] ?? [n.id];
+            const count = ids.length;
+            const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
+            const index = ids.indexOf(n.id);
+            const totalHeight = (count - 1) * step;
+            const centerY = bandTop + bandHeight / 2;
+            return Math.max(bandTop + 10, Math.min(bandBottom - 10, centerY + index * step - totalHeight / 2));
+          });
+          return d3.mean(ys);
+        }
+
+       const ids = yOffsets[world]?.[node.date] || [node.id];
+
+        if (!ids.includes(node.id)) ids.push(node.id);
+        const count = ids.length;
+        const step = Math.max(minNodeSpacing, (bandHeight - 20) / count);
+        const index = ids.indexOf(node.id);
+        const totalHeight = (count - 1) * step;
+        const centerY = bandTop + bandHeight / 2;
+        const y = centerY + index * step - totalHeight / 2;
+
+        return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
+      }
 
         const xScale = d3.scalePoint()
           .domain(filteredDates)
@@ -430,7 +438,7 @@ function applyFilters() {
         const bgBandGroup = zoomLayer.append("g").attr("class", "year-colored-bands");
         filteredDates.forEach(date => {
           const year = new Date(date).getFullYear();
-          worlds.forEach(world => {
+          worldsToShow.forEach(world => {
             const x = xScale(date);
             if (x === undefined) return;
             const y = yWorldOffsets[world];
@@ -457,8 +465,8 @@ function applyFilters() {
           .attr("dy", "0.25em");
 
         const yScaleWorld = d3.scalePoint()
-          .domain(worlds)
-          .range(worlds.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
+          .domain(worldsToShow)
+          .range(worldsToShow.map(w => yWorldOffsets[w] + worldBandHeights[w] / 2));
 
         zoomLayer.selectAll(".axis-y").remove();
     
