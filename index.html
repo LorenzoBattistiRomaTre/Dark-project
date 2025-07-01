@@ -911,7 +911,22 @@ if (!positionMap[source] || !positionMap[target]) return null;
         document.querySelectorAll(".edge-type-filter").forEach(cb => cb.checked = true);
         render(); // rende effettivi i cambiamenti
       });
-      
+
+
+      //vista espansa se si visualizzano solo eventi importanti o morti 
+      ["filter-death", "filter-trigger"].forEach(id => {
+        document.getElementById(id).addEventListener("change", () => {
+          const isDeath = document.getElementById("filter-death").checked;
+          const isTrigger = document.getElementById("filter-trigger").checked;
+
+          if (isDeath || isTrigger) {
+            groups.forEach(g => g.exploded = true);
+          }
+
+          render();
+        });
+      });
+
       render();
     });
   </script>
