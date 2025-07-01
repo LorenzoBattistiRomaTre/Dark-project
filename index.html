@@ -63,9 +63,8 @@
   <label><input type="checkbox" class="edge-type-filter" value="Same Event" checked> Evento condiviso</label>
 
   <hr>
-<button id="reset-filters-btn" style="width: 100%; padding: 10px; background: #333; color: white; border: none; cursor: pointer;">
-  Resetta filtri
-</button>
+<button id="reset-filters-btn">Resetta filtri</button>
+
 
 </div>
 
@@ -920,6 +919,9 @@ if (!positionMap[source] || !positionMap[target]) return null;
         document.getElementById("year-start").addEventListener("input", render);
         document.getElementById("year-end").addEventListener("input", render);
         document.querySelectorAll(".edge-type-filter").forEach(cb => {cb.addEventListener("change", render);});
+        document.querySelectorAll("input[name='char-mode']").forEach(el => {
+          el.addEventListener("change", render);
+        });
 
       //parte di reset
       document.getElementById("reset-filters-btn").addEventListener("click", () => {
