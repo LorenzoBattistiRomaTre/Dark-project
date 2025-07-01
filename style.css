@@ -141,3 +141,43 @@
     background: linear-gradient(to bottom, #666, #444);
     box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
+#legend-panel {
+  position: fixed;
+  left: 0;
+  top: 68px;
+  height: calc(100vh - 60px);
+  width: 260px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 4px 0 15px rgba(0,0,0,0.25);
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
+}
+
+#legend-panel.open {
+  transform: translateX(0);
+}
+
+#legend-panel ul {
+  list-style: none;
+  padding: 0;
+}
+
+
+
+#legend-panel li {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  column-gap: 10px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  font-size: 13px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}

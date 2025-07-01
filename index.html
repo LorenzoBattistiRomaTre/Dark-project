@@ -13,6 +13,7 @@
       <button id="toggle-filter-btn">☰ Filtri</button>
       <button id="expandAll">Espandi Tutto</button>
       <button id="resetView">Vista Compatta</button>
+      <button id="toggle-legend-btn">Legenda</button>
     </div>
     <svg></svg>
     <div class="tooltip"></div>
@@ -69,6 +70,21 @@
 </div>
 
 </div>
+<div id="legend-panel">
+  <h3>Legenda</h3>
+  <ul>
+    <li><svg width="16" height="16"><path d="M8,2 L2,14 L14,14 Z" fill="black"/></svg> Evento chiave (trigger)</li>
+    <li><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="red"/></svg> Morte</li>
+    <li> <svg width="16" height="16"><path d="M8,2 L2,14 L14,14 Z" fill="red"/></svg>Morte in evento chiave</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#6495ED" stroke-width="2"/></svg> Arco blu: Succesfull Time Travel</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#FF6A00" stroke-width="2" /></svg> Arco arancione: Failed Time Travel</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="hotpink" stroke-width="2" /></svg> Arco rosa: World Swap</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#999" stroke-width="2" stroke-dasharray="5,5" /></svg>Arco tratteggiato: dashed arrow</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#999" stroke-width="2" /></svg> Arco grigio: normal, Entanglement, Same Event</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="purple" stroke-width="2" /></svg> Arco viola: archi entranti su nodo (mouseover)</li>
+    <li><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="green" stroke-width="2" /></svg> Arco verde: archi uscenti da nodo (mouseover)</li>
+  </ul>
+</div>
 
   <svg></svg>
   <div class="tooltip" style="display: none;"></div>
@@ -88,6 +104,21 @@
     document.getElementById("toggle-filter-btn").addEventListener("click", () => {
       const panel = document.getElementById("filter-panel");
       panel.classList.toggle("open");
+      if (panel.classList.contains("open")) {
+        panel.style.zIndex = 1100;
+        document.getElementById("legend-panel").style.zIndex = 1000; 
+      } 
+    });
+
+  document.getElementById("toggle-legend-btn").addEventListener("click", () => {
+      const panel = document.getElementById("legend-panel");
+      panel.classList.toggle("open");
+
+        if (panel.classList.contains("open")) {
+          panel.style.zIndex = 1100;
+          document.getElementById("filter-panel").style.zIndex = 1000;
+        }
+
     });
 
     const svg = d3.select("svg");
