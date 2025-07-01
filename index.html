@@ -915,10 +915,19 @@ if (!positionMap[source] || !positionMap[target]) return null;
       }
             document.querySelectorAll(".world-filter, #filter-death, #filter-trigger")
         .forEach(el => el.addEventListener("change", render));
-        document.getElementById("character-select").addEventListener("change", render);
+        //serve per rendere automaticamente espansa la vista nel filtraggio per personaggio
+        document.getElementById("character-select").addEventListener("change", () => {
+          const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
+          if (selectedCharacters.length > 0) {
+            groups.forEach(g => g.exploded = true);
+          }
+          render();
+        });
         document.getElementById("year-start").addEventListener("input", render);
         document.getElementById("year-end").addEventListener("input", render);
-        document.querySelectorAll(".edge-type-filter").forEach(cb => {cb.addEventListener("change", render);});
+        
+        document.querySelectorAll(".edge-type-filter").forEach(cb => cb.addEventListener("change", render));
+
         document.querySelectorAll("input[name='char-mode']").forEach(el => {
           el.addEventListener("change", render);
         });
