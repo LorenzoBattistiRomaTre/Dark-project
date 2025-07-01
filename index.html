@@ -430,21 +430,63 @@ function render() {
     return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
   }
 
-  const effectiveSpacing = d => d === expandedDate ? spacing * 3 : spacing;
-  const xPositions = {};
-// Calcola la larghezza totale
+   const nodesToRender = applyFilters();
+    // === Costruzione dei grafi locali per la data espansa ===
+    const intraDayGraphs = {};
+
+    nodesToRender.forEach(d => {
+      if (d.date !== expandedDate) return;
+      const w = normalizeWorld(d.world);
+      const key = `${d.date}__${w}`;
+      if (!intraDayGraphs[key]) intraDayGraphs[key] = { nodes: [], edges: [] };
+      intraDayGraphs[key].nodes.push(d);
+    });
+    // Aggiunta degli archi interni alla stessa data e mondo
+// 1. Inserimento archi interni nel grafo
+data.edges.forEach(e => {
+  const sNode = nodeMap[e.source];
+  const tNode = nodeMap[e.target];
+  if (!sNode || !tNode) return;
+
+  const sameDay = sNode.date === expandedDate && tNode.date === expandedDate;
+  const sameWorld = normalizeWorld(sNode.world) === normalizeWorld(tNode.world);
+  if (sameDay && sameWorld) {
+    const key = `${expandedDate}__${normalizeWorld(sNode.world)}`;
+    if (intraDayGraphs[key]) {
+      intraDayGraphs[key].edges.push({ source: e.source, target: e.target });
+    }
+  }
+});
+
+// 2. Calcolo dei livelli topologici
+Object.values(intraDayGraphs).forEach(graph => {
+  graph.levelMap = computeTopologicalLevels(graph.nodes, graph.edges);
+  graph.maxLevel = Math.max(...Object.values(graph.levelMap));
+});
+
+// 3. Funzione per determinare lo spazio da allocare
+const effectiveSpacing = d => {
+  if (d !== expandedDate) return spacing;
+
+  const relevantGraphs = Object.entries(intraDayGraphs).filter(([key, _]) => key.startsWith(d + "__"));
+  if (relevantGraphs.length === 0) return spacing * 2;
+
+  const maxLayers = Math.max(...relevantGraphs.map(([_, g]) => g.maxLevel + 1));
+  return spacing * (Math.max(3, maxLayers));
+};
+
+// 4. Posizionamento X dinamico per tutte le date
+const xPositions = {};
 const totalWidth = d3.sum(filteredDates.map(d => effectiveSpacing(d)));
 const baseX = 200;
-
 let currentX = baseX;
 filteredDates.forEach(d => {
   const space = effectiveSpacing(d);
-  xPositions[d] = currentX + space / 2; // <-- centro del blocco
+  xPositions[d] = currentX + space / 2;
   currentX += space;
 });
+const xScale = d => xPositions[d];
 
-
-  const xScale = d => xPositions[d];
 
   zoomLayer.selectAll(".axis, .year-colored-bands, .expanded-date-highlight, .node, .link, .world-bg, .world-label").remove();
 
@@ -513,7 +555,7 @@ filteredDates.forEach(d => {
       render();
     });
 
-  const nodesToRender = applyFilters();
+ 
 
   zoomLayer.selectAll(".world-label")
     .data(worldsToShow)
@@ -532,14 +574,76 @@ filteredDates.forEach(d => {
 
   const idToNode = Object.fromEntries(nodesToRender.map(n => [n.id, n]));
 
-  const positionMap = {};
-  data.nodes.forEach(d => {
-    const nodeObj = { id: d.id, date: d.date, world: normalizeWorld(d.world) };
-    positionMap[d.id] = { x: xScale(d.date), y: yOffsetScale(nodeObj) };
-  });
-  nodesToRender.forEach(d => {
-    positionMap[d.id] = { x: xScale(d.date), y: yOffsetScale(d) };
-  });
+// Ordinamento topologico per assegnare i livelli orizzontali
+function computeTopologicalLevels(nodes, edges) {
+  const inDegree = {};
+  const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+  nodes.forEach(n => inDegree[n.id] = 0);
+  edges.forEach(e => inDegree[e.target]++);
+
+  const queue = nodes.filter(n => inDegree[n.id] === 0);
+  const levelMap = {};
+  queue.forEach(n => levelMap[n.id] = 0);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    const currentLevel = levelMap[current.id];
+    edges.forEach(e => {
+      if (e.source === current.id) {
+        inDegree[e.target]--;
+        if (inDegree[e.target] === 0) {
+          queue.push(nodeById[e.target]);
+          levelMap[e.target] = currentLevel + 1;
+        }
+      }
+    });
+  }
+
+  return levelMap;
+}
+
+// === Calcolo finale delle posizioni X/Y ===
+const positionMap = {};
+nodesToRender.forEach(d => {
+  let x = xScale(d.date);
+  const y = yOffsetScale(d);
+
+  if (d.date === expandedDate) {
+    const w = normalizeWorld(d.world);
+    const key = `${d.date}__${w}`;
+    const graph = intraDayGraphs[key];
+
+    if (graph) {
+      if (!graph.levelMap) {
+        graph.levelMap = computeTopologicalLevels(graph.nodes, graph.edges);
+        graph.maxLevel = Math.max(...Object.values(graph.levelMap));
+      }
+      const nodeLevel = graph.levelMap[d.id] || 0;
+      const localSpacing = effectiveSpacing(d.date);  // spazio complessivo allocato per quel giorno
+      const numLevels = graph.maxLevel + 1;
+      const perLevelSpacing = localSpacing / numLevels;
+
+      x = xScale(d.date) - localSpacing / 2 + perLevelSpacing / 2 + nodeLevel * perLevelSpacing;
+
+    }
+  }
+
+  positionMap[d.id] = { x, y };
+});
+// === Posizione dei supernodi (non esplosi) ===
+groups.forEach(group => {
+  if (!group.exploded) {
+    const repNode = nodeMap[group.ids[0]];
+    if (!repNode) return;
+
+    const date = repNode.date;
+    const world = normalizeWorld(repNode.world);
+    const x = xScale(date);
+    const y = yOffsetScale({ id: repNode.id, date, world });
+
+    positionMap[group.ids.join(",")] = { x, y };
+  }
+});
 
   // Rimane invariato tutto ciò che usa positionMap: archi, nodi, tooltip ecc.
   // NON cancellare la parte dopo — render continua con gli archi e nodi normalmente
@@ -549,10 +653,16 @@ const edgesToRender = data.edges.map(e => {
   const sourceGroup = groups.find(g => g.ids.includes(e.source));
   const targetGroup = groups.find(g => g.ids.includes(e.target));
 
-  const source = sourceGroup.exploded ? e.source : sourceGroup.ids.join(",");
-  const target = targetGroup.exploded ? e.target : targetGroup.ids.join(",");
+if (!sourceGroup || !targetGroup) return null;
 
-  if (!visibleNodeIds.has(source) || !visibleNodeIds.has(target)) return null;
+const source = sourceGroup.exploded ? e.source : sourceGroup.ids.join(",");
+const target = targetGroup.exploded ? e.target : targetGroup.ids.join(",");
+
+// Evita self-loop finti quando source e target diventano lo stesso supernodo
+if (source === target) return null;
+
+// Se le posizioni non sono state calcolate (filtri), salta
+if (!positionMap[source] || !positionMap[target]) return null;
 
   const edgeType = e.type || "__other__";
   if (!selectedEdgeTypes.includes(edgeType)) return null;
@@ -593,6 +703,7 @@ const edgesToRender = data.edges.map(e => {
     curveDirection
   };
 }).filter(d => d !== null);
+
 
   zoomLayer.selectAll(".link")
   .data(edgesToRender).enter()
@@ -675,7 +786,11 @@ const edgesToRender = data.edges.map(e => {
       })
       .attr("class", "node")
       .attr("data-id", d => d.id)
-      .attr("transform", d => `translate(${xScale(d.date)},${yOffsetScale(d)})`)
+      .attr("transform", d => {
+        const pos = positionMap[d.id];
+        return pos ? `translate(${pos.x},${pos.y})` : null;
+      })
+
       .attr("d", d => {
         const isTrigger = d.important_trigger || (d.isGroup && d.group && d.group.ids.some(id => nodeMap[id]?.important_trigger));
         if (isTrigger) {
