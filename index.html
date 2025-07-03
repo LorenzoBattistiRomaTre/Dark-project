@@ -20,7 +20,6 @@
 
   </div>
 
-<!-- PANNELLO -->
 <div id="filter-panel">
   <div id="filter-controls">
     <h3>Filtri</h3>
@@ -64,7 +63,6 @@
 
   <hr>
 <button id="reset-filters-btn">Resetta filtri</button>
-
 
 </div>
 
@@ -112,12 +110,10 @@
   document.getElementById("toggle-legend-btn").addEventListener("click", () => {
       const panel = document.getElementById("legend-panel");
       panel.classList.toggle("open");
-
         if (panel.classList.contains("open")) {
           panel.style.zIndex = 1100;
           document.getElementById("filter-panel").style.zIndex = 1000;
         }
-
     });
 
     const svg = d3.select("svg");
@@ -152,8 +148,6 @@
       .attr("markerWidth", 7)
       .attr("markerHeight", 7)
       .attr("orient", "auto")
-      /*decommenta se vuoi marker delle frecce a dimensione fissa*/
-      /*.attr("markerUnits", "userSpaceOnUse")*/
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", d => d.color);
@@ -252,7 +246,7 @@
         }
       });
       
-      const spacing = 75; // aumenta da default (circa 50) a 150 per triplicare la distanza
+      const spacing = 75; 
       
         // Colorazione alternata per anno, bande verticali
         zoomLayer.selectAll(".year-colored-bands").remove();
@@ -290,7 +284,7 @@
       }
 
       const groups = groupNodes();
-        groups.forEach(g => g.exploded = false); // <- aggiungi qui
+        groups.forEach(g => g.exploded = false); 
         render();
 
 function applyFilters() {
@@ -306,7 +300,6 @@ function applyFilters() {
 
   const nodesToRender = [];
 
-  //Trova tutti i nodi connessi da archi di tipo selezionato
   const connectedNodeIds = new Set();
   data.edges.forEach(e => {
     const type = e.type || "Normal";
@@ -384,7 +377,6 @@ function applyFilters() {
   return nodesToRender;
 }
 
-
 function render() {
   const yearStart = parseInt(document.getElementById("year-start").value);
   const yearEnd = parseInt(document.getElementById("year-end").value);
@@ -460,8 +452,7 @@ function render() {
     return Math.max(bandTop + 10, Math.min(bandBottom - 10, y));
   }
 
-   const nodesToRender = applyFilters();
-    // === Costruzione dei grafi locali per la data espansa ===
+    const nodesToRender = applyFilters();
     const intraDayGraphs = {};
 
     nodesToRender.forEach(d => {
@@ -471,8 +462,7 @@ function render() {
       if (!intraDayGraphs[key]) intraDayGraphs[key] = { nodes: [], edges: [] };
       intraDayGraphs[key].nodes.push(d);
     });
-    // Aggiunta degli archi interni alla stessa data e mondo
-// 1. Inserimento archi interni nel grafo
+    
 data.edges.forEach(e => {
   const sNode = nodeMap[e.source];
   const tNode = nodeMap[e.target];
@@ -488,13 +478,11 @@ data.edges.forEach(e => {
   }
 });
 
-// 2. Calcolo dei livelli topologici
 Object.values(intraDayGraphs).forEach(graph => {
   graph.levelMap = computeTopologicalLevels(graph.nodes, graph.edges);
   graph.maxLevel = Math.max(...Object.values(graph.levelMap));
 });
 
-// 3. Funzione per determinare lo spazio da allocare
 const effectiveSpacing = d => {
   if (d !== expandedDate) return spacing;
 
@@ -505,7 +493,6 @@ const effectiveSpacing = d => {
   return spacing * (Math.max(3, maxLayers));
 };
 
-// 4. Posizionamento X dinamico per tutte le date
 const xPositions = {};
 const totalWidth = d3.sum(filteredDates.map(d => effectiveSpacing(d)));
 const baseX = 200;
@@ -539,7 +526,6 @@ const xScale = d => xPositions[d];
     });
   });
 
-  // Linee nere laterali
   if (expandedDate && xPositions[expandedDate] !== undefined) {
     const x = xPositions[expandedDate];
     const localSpacing = effectiveSpacing(expandedDate);
@@ -561,7 +547,6 @@ const xScale = d => xPositions[d];
       .attr("stroke-width", 3);
   }
 
-  // Etichette asse X cliccabili
   const axisGroup = zoomLayer.append("g")
     .attr("class", "axis")
     .attr("transform", `translate(0, ${height - 10})`);
@@ -585,8 +570,6 @@ const xScale = d => xPositions[d];
       render();
     });
 
- 
-
   zoomLayer.selectAll(".world-label")
     .data(worldsToShow)
     .enter()
@@ -604,7 +587,6 @@ const xScale = d => xPositions[d];
 
   const idToNode = Object.fromEntries(nodesToRender.map(n => [n.id, n]));
 
-// Ordinamento topologico per assegnare i livelli orizzontali
 function computeTopologicalLevels(nodes, edges) {
   const inDegree = {};
   const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
@@ -632,7 +614,6 @@ function computeTopologicalLevels(nodes, edges) {
   return levelMap;
 }
 
-// === Calcolo finale delle posizioni X/Y ===
 const positionMap = {};
 nodesToRender.forEach(d => {
   let x = xScale(d.date);
@@ -649,7 +630,7 @@ nodesToRender.forEach(d => {
         graph.maxLevel = Math.max(...Object.values(graph.levelMap));
       }
       const nodeLevel = graph.levelMap[d.id] || 0;
-      const localSpacing = effectiveSpacing(d.date);  // spazio complessivo allocato per quel giorno
+      const localSpacing = effectiveSpacing(d.date); 
       const numLevels = graph.maxLevel + 1;
       const perLevelSpacing = localSpacing / numLevels;
 
@@ -660,7 +641,7 @@ nodesToRender.forEach(d => {
 
   positionMap[d.id] = { x, y };
 });
-// === Posizione dei supernodi (non esplosi) ===
+
 groups.forEach(group => {
   if (!group.exploded) {
     const repNode = nodeMap[group.ids[0]];
@@ -675,8 +656,6 @@ groups.forEach(group => {
   }
 });
 
-  // Rimane invariato tutto ciò che usa positionMap: archi, nodi, tooltip ecc.
-  // NON cancellare la parte dopo — render continua con gli archi e nodi normalmente
 const visibleNodeIds = new Set(nodesToRender.map(n => n.id));
 const selectedEdgeTypes = Array.from(document.querySelectorAll(".edge-type-filter:checked")).map(cb => cb.value);
 const edgesToRender = data.edges.map(e => {
@@ -688,10 +667,8 @@ if (!sourceGroup || !targetGroup) return null;
 const source = sourceGroup.exploded ? e.source : sourceGroup.ids.join(",");
 const target = targetGroup.exploded ? e.target : targetGroup.ids.join(",");
 
-// Evita self-loop finti quando source e target diventano lo stesso supernodo
 if (source === target) return null;
 
-// Se le posizioni non sono state calcolate (filtri), salta
 if (!positionMap[source] || !positionMap[target]) return null;
 
   const edgeType = e.type || "__other__";
@@ -737,7 +714,7 @@ if (!positionMap[source] || !positionMap[target]) return null;
 
   zoomLayer.selectAll(".link")
   .data(edgesToRender).enter()
-  .append("path") // <-- CAMBIATO da line a path
+  .append("path") 
   .attr("class", d => `link link-${d.id}`)
   .attr("d", d => {
   if (d.curved) {
@@ -745,10 +722,7 @@ if (!positionMap[source] || !positionMap[target]) return null;
     const dy = d.y2 - d.y1;
     const midX = (d.x1 + d.x2) / 2;
     const midY = (d.y1 + d.y2) / 2;
-
     const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Offset proporzionale, ma con un minimo di 10 e massimo di 50
     const baseOffset = d.y2 > d.y1 ? 1 : -1;
     const curveOffset = baseOffset * Math.max(10, Math.min(50, distance / 3));
 
@@ -915,7 +889,6 @@ if (!positionMap[source] || !positionMap[target]) return null;
       }
             document.querySelectorAll(".world-filter, #filter-death, #filter-trigger")
         .forEach(el => el.addEventListener("change", render));
-        //serve per rendere automaticamente espansa la vista nel filtraggio per personaggio
         document.getElementById("character-select").addEventListener("change", () => {
           const selectedCharacters = Array.from(document.getElementById("character-select").selectedOptions).map(opt => opt.value);
           if (selectedCharacters.length > 0) {
@@ -932,8 +905,8 @@ if (!positionMap[source] || !positionMap[target]) return null;
           el.addEventListener("change", render);
         });
 
-      //parte di reset
-      document.getElementById("reset-filters-btn").addEventListener("click", () => {
+        //parte di reset
+        document.getElementById("reset-filters-btn").addEventListener("click", () => {
         // Reset mondi
         document.querySelectorAll(".world-filter").forEach(cb => cb.checked = true);
         // Reset checkboxes
